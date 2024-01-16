@@ -10,13 +10,19 @@ out vec3 f_norm;
 out vec3 f_colour;
 out vec2 f_uv;
 
-uniform mat4 u_mat;
+uniform mat4
+	u_modelMat,
+	u_viewMat,
+	u_projMat;
 
 void main() {
-	gl_Position = u_mat * vec4(v_pos, 1.0);
+	mat4 modelViewMat = u_viewMat * u_modelMat;
+	mat4 normMat = transpose(inverse(modelViewMat));
+	
+	gl_Position = u_projMat * modelViewMat * vec4(v_pos, 1.0);
 	
 	f_pos = v_pos;
-	f_norm = v_norm;
+	f_norm = (normMat * vec4(v_norm, 1.0)).xyz;
 	f_colour = v_colour;
 	f_uv = v_uv;
 }

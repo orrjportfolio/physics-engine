@@ -21,35 +21,35 @@ static void init() {
 	sh = Gfx::shaderCreate(vshp, fshp);
 	
 	Gfx::Vertex3D vertices[] = {
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 0, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 0, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 0, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 0, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 0, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 0, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 0, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 0, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, INT16_MAX), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, INT16_MAX), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, INT16_MAX), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, INT16_MAX), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, INT16_MIN, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, INT16_MIN, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, INT16_MIN, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, INT16_MIN, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(0, 255, 0, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, INT16_MAX, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, INT16_MAX, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, INT16_MAX, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, INT16_MAX, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(INT16_MIN, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(INT16_MIN, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(INT16_MIN, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(INT16_MIN, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
-		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(0, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(INT16_MAX, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(INT16_MAX, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, 0.5f), .norm = glm::i16vec3(INT16_MAX, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
+		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, 0.5f), .norm = glm::i16vec3(INT16_MAX, 0, 0), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 	};
 	uint16_t indices[] = {
 		0, 1, 2,
@@ -82,13 +82,19 @@ static void update() {
 	
 	glUseProgram(sh);
 	
-	GLint uniform = glGetUniformLocation(sh, "u_mat");
-	glm::mat4 mat =
-		glm::perspective(70.0f, w / (float)h, 0.01f, 100.0f) *
-		glm::translate(glm::vec3(0.0f, 0.0f, -3.0f)) *
-		glm::rotate(glm::radians((float)SDL_GetTicks() * 0.2f), glm::vec3(1.0f, 1.0f, 1.0f));
+	GLint uProjMat = glGetUniformLocation(sh, "u_projMat");
+	GLint uViewMat = glGetUniformLocation(sh, "u_viewMat");
+	GLint uModelMat = glGetUniformLocation(sh, "u_modelMat");
+	glm::mat4 projMat =
+		glm::perspective(70.0f, w / (float)h, 0.01f, 100.0f);
+	glm::mat4 viewMat =
+		glm::translate(glm::vec3(0.0f, 0.0f, -3.0f));
+	glm::mat4 modelMat =
+		glm::rotate(glm::radians((float)SDL_GetTicks() * 0.05f), glm::vec3(0.5f, 1.0f, 0.5f));
 	
-	glUniformMatrix4fv(uniform, 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix4fv(uProjMat, 1, GL_FALSE, &projMat[0][0]);
+	glUniformMatrix4fv(uViewMat, 1, GL_FALSE, &viewMat[0][0]);
+	glUniformMatrix4fv(uModelMat, 1, GL_FALSE, &modelMat[0][0]);
 	
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
