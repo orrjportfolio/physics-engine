@@ -1,8 +1,10 @@
 
-#include <cstdio>
+#include <SDL2/SDL.h>
+
+#include "app.hpp"
 
 int main(int argc, char **argv) {
-	puts(":)");
+	appRun();
 	
 	return 0;
 }
