@@ -5,6 +5,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <span>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <GL/gl3w.h>
 #include <glm/glm.hpp>
@@ -160,6 +163,79 @@ namespace Gfx {
 		mesh.primitiveKind = primitiveKind;
 		
 		return mesh;
+	}
+	
+	static Mesh3D mesh3dLoad(char const *path) {
+		std::vector<glm::vec3> poses;
+		std::vector<glm::vec3> norms;
+		std::vector<glm::vec2> uvs;
+		
+		std::vector<Vertex3D> vertices;
+		std::vector<uint16_t> indices;
+		std::unordered_map<glm::u16vec3, uint16_t, decltype([](glm::u16vec3 v) {
+			return std::hash<std::string_view>{}(
+				std::string_view((char*)&v, sizeof(v))
+			);
+		})> indexMap;
+		
+		char *sb = strLoad(path, nullptr);
+		char *s = sb;
+		
+		while (*s != '\0') {
+			if (*s == 'v') {
+				s++;
+				char c = *s++;
+				if (c == 'n') {
+					float x = strtof(s, &s);
+					float y = strtof(s, &s);
+					float z = strtof(s, &s);
+					norms.push_back(glm::vec3(x, y, z));
+				}
+				else if (c == 't') {
+					float x = strtof(s, &s);
+					float y = strtof(s, &s);
+					uvs.push_back(glm::vec2(x, y));
+				}
+				else {
+					float x = strtof(s, &s);
+					float y = strtof(s, &s);
+					float z = strtof(s, &s);
+					poses.push_back(glm::vec3(x, y, z));
+				}
+			}
+			else if (*s == 'f') {
+				for (int i = 0; i < 3; i++) {
+					glm::u16vec3 key;
+					key.x = (uint16_t)(strtoul(++s, &s, 10) - 1);
+					key.y = (uint16_t)(strtoul(++s, &s, 10) - 1);
+					key.z = (uint16_t)(strtoul(++s, &s, 10) - 1);
+					
+					uint16_t index;
+					
+					auto it = indexMap.find(key);
+					if (it != indexMap.end()) {
+						index = it->second;
+					}
+					else {
+						index = vertices.size();
+						vertices.push_back(Vertex3D{
+							.pos = poses[key.x],
+							.norm = glm::i16vec3(norms[key.z] * (float)INT16_MAX),
+							.uv = uvs[key.y]
+						});
+						indexMap.insert({key, index});
+					}
+					
+					indices.push_back(index);
+				}
+			}
+			
+			while (*s++ != '\n');
+		}
+		
+		free(sb);
+		
+		return mesh3dCreate(vertices, indices, GL_TRIANGLES);
 	}
 	
 	static void mesh3dDraw(Mesh3D const *mesh) {

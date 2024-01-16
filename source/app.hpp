@@ -20,7 +20,7 @@ static void init() {
 	fshp = Gfx::shaderPartLoad("assets/shaders/basic3d.frag.glsl", GL_FRAGMENT_SHADER);
 	sh = Gfx::shaderCreate(vshp, fshp);
 	
-	Gfx::Vertex3D vertices[] = {
+	/*Gfx::Vertex3D vertices[] = {
 		Gfx::Vertex3D{.pos = glm::vec3(-0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		Gfx::Vertex3D{.pos = glm::vec3(0.5f, 0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
 		Gfx::Vertex3D{.pos = glm::vec3(0.5f, -0.5f, -0.5f), .norm = glm::i16vec3(0, 0, INT16_MIN), .colour = glm::u8vec4(255, 255, 255, 255), .uv = glm::vec2(0.0f, 0.0f)},
@@ -70,7 +70,8 @@ static void init() {
 		20, 21, 22,
 		20, 22, 23
 	};
-	test = Gfx::mesh3dCreate(vertices, indices, GL_TRIANGLES);
+	test = Gfx::mesh3dCreate(vertices, indices, GL_TRIANGLES);*/
+	test = Gfx::mesh3dLoad("assets/models/cylinder.obj");
 }
 
 static void update() {
@@ -90,6 +91,7 @@ static void update() {
 	glm::mat4 viewMat =
 		glm::translate(glm::vec3(0.0f, 0.0f, -3.0f));
 	glm::mat4 modelMat =
+		//glm::identity<glm::mat4>();
 		glm::rotate(glm::radians((float)SDL_GetTicks() * 0.05f), glm::vec3(0.5f, 1.0f, 0.5f));
 	
 	glUniformMatrix4fv(uProjMat, 1, GL_FALSE, &projMat[0][0]);
