@@ -4,7 +4,7 @@
 #include "app.hpp"
 
 int main(int argc, char **argv) {
-	appRun();
+	App::run();
 	
 	return 0;
 }
