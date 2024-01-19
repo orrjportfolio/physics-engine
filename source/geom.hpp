@@ -292,3 +292,39 @@ static Overlap obbPlaneOverlap(
 	
 	return Overlap{.exists = false};
 }
+
+static glm::vec3 sphereSphereContact(
+	glm::vec3 aPos, float aRadius,
+	glm::vec3 bPos, float bRadius
+) {
+	return aPos + (glm::normalize(bPos - aPos) * aRadius);
+}
+
+static glm::vec3 sphereAabbContact(
+	glm::vec3 spherePos, float sphereRadius,
+	glm::vec3 aabbMinPos, glm::vec3 aabbMaxPos
+) {
+	return glm::clamp(spherePos, aabbMinPos, aabbMaxPos);
+}
+
+static glm::vec3 sphereObbContact(
+	glm::vec3 spherePos, float sphereRadius,
+	glm::vec3 obbPos, glm::vec3 obbMinPos, glm::vec3 obbMaxPos, glm::mat3 obbRot, glm::mat3 obbRotInv
+) {
+	glm::mat4 m = glm::translate(obbPos) * glm::mat4(obbRotInv) * glm::translate(-obbPos);
+	glm::mat4 mInv = glm::translate(obbPos) * glm::mat4(obbRot) * glm::translate(-obbPos);
+	
+	glm::vec3 mSpherePos = m * glm::vec4(spherePos, 1.0f);
+	glm::vec3 mP = glm::clamp(mSpherePos, obbMinPos, obbMaxPos);
+	
+	return mInv * glm::vec4(mP, 1.0f);
+}
+
+static glm::vec3 spherePlaneContact(
+	glm::vec3 spherePos, float sphereRadius,
+	glm::vec3 planeNorm, float planeDist
+) {
+	float proj = glm::dot(spherePos, planeNorm) - planeDist;
+	
+	return spherePos + (((proj < 0.0f)? -planeNorm : planeNorm) * sphereRadius);
+}
