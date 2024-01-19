@@ -7,8 +7,8 @@
 #include "geom.hpp"
 #include "gfx3d.hpp"
 
-static inline glm::vec3 playerPos = glm::vec3(0.0f, 0.0f, 3.0f);
-static inline glm::vec3 playerSize = glm::vec3(1.0f, 1.0f, 1.0f);
+static inline glm::vec3 playerNorm = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
+static inline float playerDist = -5.0f;
 
 static inline glm::vec3 spherePos = glm::vec3(-3.0f, 0.0f, 0.0f);
 static inline float sphereRadius = 1.0f;
@@ -52,56 +52,44 @@ static void gameUpdate(float dt) {
 	else {
 		SDL_SetRelativeMouseMode(SDL_FALSE);
 		
-		if (keysHeld[SDL_SCANCODE_A]) { playerPos.x -= 2.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_D]) { playerPos.x += 2.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_Q]) { playerPos.y -= 2.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_E]) { playerPos.y += 2.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_W]) { playerPos.z -= 2.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_S]) { playerPos.z += 2.0f * dt; }
+		if (keysHeld[SDL_SCANCODE_Q]) { playerDist -= 2.0f * dt; }
+		if (keysHeld[SDL_SCANCODE_E]) { playerDist += 2.0f * dt; }
 	}
 	
 	float time = SDL_GetTicks() / 1000.0f;
 	
 	obbRot = glm::rotate(time, glm::vec3(0.5f, 1.0f, 0.5f));
 	
-	Overlap overlapSphere = sphereAabbOverlap(spherePos, sphereRadius, playerPos - (playerSize / 2.0f), playerPos + (playerSize / 2.0f));
-	if (overlapSphere.exists) {
-		spherePos += overlapSphere.norm * (overlapSphere.depth / 2.0f);
-		playerPos -= overlapSphere.norm * (overlapSphere.depth / 2.0f);
-	}
+	Overlap overlapSphere = spherePlaneOverlap(spherePos, sphereRadius, playerNorm, playerDist);
 	
-	Overlap overlapAabb = aabbAabbOverlap(playerPos - (playerSize / 2.0f), playerPos + (playerSize / 2.0f), aabbPos - (aabbSize / 2.0f), aabbPos + (aabbSize / 2.0f));
-	if (overlapAabb.exists) {
-		playerPos += overlapAabb.norm * (overlapAabb.depth / 2.0f);
-		aabbPos -= overlapAabb.norm * (overlapAabb.depth / 2.0f);
-	}
+	glm::vec3 aabbVerts2[8];
+	aabbVerts(aabbPos - (aabbSize / 2.0f), aabbPos + (aabbSize / 2.0f), aabbVerts2);
+	Overlap overlapAabb = obbPlaneOverlap(aabbVerts2, playerNorm, playerDist);
 	
-	glm::vec3 playerVerts[8], obbVerts2[8];
-	aabbVerts(playerPos - (playerSize / 2.0f), playerPos + (playerSize / 2.0f), playerVerts);
+	glm::vec3 obbVerts2[8];
 	obbVerts(obbPos, obbSize, obbRot, obbVerts2);
-	Overlap overlapObb = obbObbOverlap(playerPos, playerVerts, obbPos, obbVerts2);
-	if (overlapObb.exists) {
-		playerPos += overlapObb.norm * (overlapObb.depth / 2.0f);
-		obbPos -= overlapObb.norm * (overlapObb.depth / 2.0f);
-	}
-	aabbVerts(playerPos - (playerSize / 2.0f), playerPos + (playerSize / 2.0f), playerVerts);
-	obbVerts(obbPos, obbSize, obbRot, obbVerts2);
+	Overlap overlapObb = obbPlaneOverlap(obbVerts2, playerNorm, playerDist);
 	
 	glm::vec3 const white = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 const cyan = glm::vec3(0.0f, 1.0f, 1.0f);
 	glm::vec3 const red = glm::vec3(1.0f, 0.0f, 0.0f);
 	
+	glm::vec3 defaultNorm = glm::vec3(0.0f, 0.0f, 1.0f);
+	float playerAngle = glm::acos(glm::dot(defaultNorm, playerNorm));
+	glm::vec3 playerAxis = glm::cross(defaultNorm, playerNorm);
+	//glm::mat3 playerMat = 
+	
 	gfx3dQueueDrawMesh(
-		&gfx3dCubeMesh,
+		&gfx3dPlaneMesh,
 		&gfx3dWhiteTex,
 		(
 			overlapSphere.exists ||
 			overlapAabb.exists ||
 			overlapObb.exists
 		)? red : cyan,
-		playerPos,
-		playerSize,
-		glm::identity<glm::mat3>()
+		playerNorm * playerDist,
+		glm::vec3(200.0f),
+		glm::rotate(playerAngle, playerAxis)
 	);
 	
 	gfx3dQueueDrawMesh(

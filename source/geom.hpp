@@ -99,6 +99,23 @@ static Overlap sphereObbOverlap(
 	return Overlap{.exists = false};
 }
 
+static Overlap spherePlaneOverlap(
+	glm::vec3 spherePos, float sphereRadius,
+	glm::vec3 planeNorm, float planeDist
+) {
+	float dist = glm::dot(spherePos, planeNorm) - planeDist;
+	
+	if (glm::abs(dist) < sphereRadius) {
+		return Overlap{
+			.exists = true,
+			.norm = (dist < 0)? -planeNorm : planeNorm,
+			.depth = sphereRadius - glm::abs(dist)
+		};
+	}
+	
+	return Overlap{.exists = false};
+}
+
 static Overlap aabbAabbOverlap(
 	glm::vec3 aMinPos, glm::vec3 aMaxPos,
 	glm::vec3 bMinPos, glm::vec3 bMaxPos
@@ -219,4 +236,40 @@ static Overlap obbObbOverlap(
 		.norm = norm,
 		.depth = minDepth
 	};
+}
+
+static Overlap obbPlaneOverlap(
+	glm::vec3 const *obbVerts,
+	glm::vec3 planeNorm, float planeDist
+) {
+	float min = glm::dot(obbVerts[0], planeNorm);
+	float max = min;
+	
+	for (size_t i = 1; i < 8; i++) {
+		float proj = glm::dot(obbVerts[i], planeNorm);
+		
+		if (min > proj) { min = proj; }
+		if (max < proj) { max = proj; }
+	}
+	
+	if (min < planeDist && max > planeDist) {
+		float depth;
+		glm::vec3 norm;
+		if (planeDist - min < max - planeDist) {
+			depth = planeDist - min;
+			norm = -planeNorm;
+		}
+		else {
+			depth = max - planeDist;
+			norm = planeNorm;
+		}
+		
+		return Overlap{
+			.exists = true,
+			.norm = planeNorm,
+			.depth = depth
+		};
+	}
+	
+	return Overlap{.exists = false};
 }
