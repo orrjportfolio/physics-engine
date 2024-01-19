@@ -356,6 +356,6 @@ static void gfx3dQueueDrawMesh(
 		.mesh = mesh,
 		.tex = tex,
 		.colour = colour,
-		.mat = glm::translate(pos) * glm::scale(scale) * glm::mat4(orientation)
+		.mat = glm::translate(pos) * glm::mat4(orientation) * glm::scale(scale)
 	});
 }
