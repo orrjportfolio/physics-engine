@@ -156,6 +156,25 @@ static Overlap aabbAabbOverlap(
 	return Overlap{.exists = false};
 }
 
+static Overlap aabbPlaneOverlap(
+	glm::vec3 aabbPos, glm::vec3 aabbSize,
+	glm::vec3 planeNorm, float planeDist
+) {
+	float r = glm::dot(aabbSize / 2.0f, planeNorm);
+	
+	float dist = glm::dot(aabbPos, planeNorm) - planeDist;
+	
+	if (glm::abs(dist) < r) {
+		return Overlap{
+			.exists = true,
+			.norm = (dist < 0.0f)? -planeNorm : planeNorm,
+			.depth = r - glm::abs(dist)
+		};
+	}
+	
+	return Overlap{.exists = false};
+}
+
 static Overlap obbObbOverlap(
 	glm::vec3 aPos, glm::vec3 const *aVerts,
 	glm::vec3 bPos, glm::vec3 const *bVerts

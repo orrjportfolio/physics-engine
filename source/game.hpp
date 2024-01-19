@@ -61,14 +61,21 @@ static void gameUpdate(float dt) {
 	obbRot = glm::rotate(time, glm::vec3(0.5f, 1.0f, 0.5f));
 	
 	Overlap overlapSphere = spherePlaneOverlap(spherePos, sphereRadius, playerNorm, playerDist);
+	if (overlapSphere.exists) {
+		spherePos += overlapSphere.norm * overlapSphere.depth;
+	}
 	
-	glm::vec3 aabbVerts2[8];
-	aabbVerts(aabbPos - (aabbSize / 2.0f), aabbPos + (aabbSize / 2.0f), aabbVerts2);
-	Overlap overlapAabb = obbPlaneOverlap(aabbVerts2, playerNorm, playerDist);
+	Overlap overlapAabb = aabbPlaneOverlap(aabbPos, aabbSize, playerNorm, playerDist);
+	if (overlapAabb.exists) {
+		aabbPos += overlapAabb.norm * overlapAabb.depth;
+	}
 	
 	glm::vec3 obbVerts2[8];
 	obbVerts(obbPos, obbSize, obbRot, obbVerts2);
 	Overlap overlapObb = obbPlaneOverlap(obbVerts2, playerNorm, playerDist);
+	if (overlapObb.exists) {
+		obbPos += overlapObb.norm * overlapObb.depth;
+	}
 	
 	glm::vec3 const white = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 const cyan = glm::vec3(0.0f, 1.0f, 1.0f);
