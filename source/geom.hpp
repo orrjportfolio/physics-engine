@@ -1,9 +1,34 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "gfx3d.hpp"
+static void aabbVerts(glm::vec3 minPos, glm::vec3 maxPos, glm::vec3 *oVerts) {
+	oVerts[0] = minPos;
+	oVerts[1] = glm::vec3(maxPos.x, minPos.y, minPos.z);
+	oVerts[2] = glm::vec3(maxPos.x, maxPos.y, minPos.z);
+	oVerts[3] = glm::vec3(minPos.x, maxPos.y, minPos.z);
+	oVerts[4] = glm::vec3(minPos.x, minPos.y, maxPos.z);
+	oVerts[5] = glm::vec3(maxPos.x, minPos.y, maxPos.z);
+	oVerts[6] = glm::vec3(maxPos.x, maxPos.y, maxPos.z);
+	oVerts[7] = glm::vec3(minPos.x, maxPos.y, maxPos.z);
+}
+
+static void obbVerts(glm::vec3 pos, glm::vec3 size, glm::mat3 rot, glm::vec3 *oVerts) {
+	glm::vec3 halfSize = size / 2.0f;
+	
+	oVerts[0] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, -halfSize.z));
+	oVerts[1] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, -halfSize.z));
+	oVerts[2] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, -halfSize.z));
+	oVerts[3] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, -halfSize.z));
+	oVerts[4] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, halfSize.z));
+	oVerts[5] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, halfSize.z));
+	oVerts[6] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, halfSize.z));
+	oVerts[7] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, halfSize.z));
+}
 
 struct Overlap {
 	bool exists;
@@ -74,30 +99,124 @@ static Overlap sphereObbOverlap(
 	return Overlap{.exists = false};
 }
 
-static Overlap planePlaneOverlap(
-	glm::vec3 const *aVerts,
-	glm::vec3 const *bVerts
-) {
-	return Overlap{.exists = false};
-}
-
-static Overlap planeObbOverlap(
-	glm::vec3 const *planeVerts,
-	glm::vec3 const *obbVerts
-) {
-	return Overlap{.exists = false};
-}
-
 static Overlap aabbAabbOverlap(
-	glm::vec3 aPos, glm::vec3 aSize,
-	glm::vec3 bPos, glm::vec3 bSize
+	glm::vec3 aMinPos, glm::vec3 aMaxPos,
+	glm::vec3 bMinPos, glm::vec3 bMaxPos
 ) {
+	if (
+		aMinPos.x < bMaxPos.x && bMinPos.x < aMaxPos.x &&
+		aMinPos.y < bMaxPos.y && bMinPos.y < aMaxPos.y &&
+		aMinPos.z < bMaxPos.z && bMinPos.z < aMaxPos.z
+	) {
+		float depthLeft = aMaxPos.x - bMinPos.x;
+		float depthRight = bMaxPos.x - aMinPos.x;
+		float depthTop = aMaxPos.y - bMinPos.y;
+		float depthBottom = bMaxPos.y - aMinPos.y;
+		float depthFront = aMaxPos.z - bMinPos.z;
+		float depthBack = bMaxPos.z - aMinPos.z;
+		
+		float depth = std::min({
+			depthLeft, depthRight,
+			depthTop, depthBottom,
+			depthFront, depthBack
+		});
+		
+		glm::vec3 norm;
+		if (depth == depthLeft) { norm = glm::vec3(-1.0f, 0.0f, 0.0f); }
+		else if (depth == depthRight) { norm = glm::vec3(1.0f, 0.0f, 0.0f); }
+		else if (depth == depthTop) { norm = glm::vec3(0.0f, -1.0f, 0.0f); }
+		else if (depth == depthBottom) { norm = glm::vec3(0.0f, 1.0f, 0.0f); }
+		else if (depth == depthFront) { norm = glm::vec3(0.0f, 0.0f, -1.0f); }
+		else if (depth == depthBack) { norm = glm::vec3(0.0f, 0.0f, 1.0f); }
+		
+		return Overlap{
+			.exists = true,
+			.norm = norm,
+			.depth = depth,
+		};
+	}
+	
 	return Overlap{.exists = false};
 }
 
 static Overlap obbObbOverlap(
-	glm::vec3 aPos, glm::vec3 aSize, glm::mat3 aRot,
-	glm::vec3 bPos, glm::vec3 bSize, glm::mat3 bRot
+	glm::vec3 aPos, glm::vec3 const *aVerts,
+	glm::vec3 bPos, glm::vec3 const *bVerts
 ) {
-	return Overlap{.exists = false};
+	glm::vec3 aAxes[] = {
+		glm::normalize(aVerts[1] - aVerts[0]),
+		glm::normalize(aVerts[3] - aVerts[0]),
+		glm::normalize(aVerts[4] - aVerts[0]),
+	};
+	
+	glm::vec3 bAxes[] = {
+		glm::normalize(bVerts[1] - bVerts[0]),
+		glm::normalize(bVerts[3] - bVerts[0]),
+		glm::normalize(bVerts[4] - bVerts[0]),
+	};
+	
+	glm::vec3 axes[] = {
+		aAxes[0],
+		aAxes[1],
+		aAxes[2],
+		bAxes[0],
+		bAxes[1],
+		bAxes[2],
+		glm::normalize(glm::cross(aAxes[0], bAxes[0])),
+		glm::normalize(glm::cross(aAxes[0], bAxes[1])),
+		glm::normalize(glm::cross(aAxes[0], bAxes[2])),
+		glm::normalize(glm::cross(aAxes[1], bAxes[0])),
+		glm::normalize(glm::cross(aAxes[1], bAxes[1])),
+		glm::normalize(glm::cross(aAxes[1], bAxes[2])),
+		glm::normalize(glm::cross(aAxes[2], bAxes[0])),
+		glm::normalize(glm::cross(aAxes[2], bAxes[1])),
+		glm::normalize(glm::cross(aAxes[2], bAxes[2]))
+	};
+	
+	float minDepth = INFINITY;
+	glm::vec3 norm;
+	
+	for (glm::vec3 axis : axes) {
+		auto const projSpan = [](glm::vec3 axis, glm::vec3 const *verts, float *oMin, float *oMax) {
+			float min = glm::dot(verts[0], axis);
+			float max = min;
+			
+			for (size_t i = 1; i < 8; i++) {
+				float proj = glm::dot(verts[i], axis);
+				
+				if (min > proj) { min = proj; }
+				else if (max < proj) { max = proj; }
+			}
+			
+			*oMin = min;
+			*oMax = max;
+		};
+		
+		float aMin, aMax;
+		projSpan(axis, aVerts, &aMin, &aMax);
+		
+		float bMin, bMax;
+		projSpan(axis, bVerts, &bMin, &bMax);
+		
+		if (aMax <= bMin || bMax <= aMin) {
+			return Overlap{.exists = false};
+		}
+		
+		float depth = glm::min(aMax - bMin, bMax - aMin);
+		
+		if (minDepth > depth) {
+			minDepth = depth;
+			norm = axis;
+		}
+	}
+	
+	if (glm::dot(norm, bPos - aPos) > 0.0f) {
+		norm = -norm;
+	}
+	
+	return Overlap{
+		.exists = true,
+		.norm = norm,
+		.depth = minDepth
+	};
 }
