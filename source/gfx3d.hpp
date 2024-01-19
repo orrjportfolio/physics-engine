@@ -244,26 +244,21 @@ namespace Gfx3d {
 		glDrawElements(mesh->primitiveKind, mesh->numIndices, GL_UNSIGNED_SHORT, (void*)0);
 	}
 	
-	struct DrawMeshCommand {
-		Mesh const *mesh;
-		Tex const *tex;
-		glm::vec3 colour;
-		glm::mat4 mat;
-	};
-	
 	static inline GLuint
 		surface3dVertShader,
 		surface3dFragShader;
 	
 	static inline struct {
-		GLuint program;
+		GLuint handle;
 		GLint
 			uModelMat,
 			uViewMat,
 			uProjMat,
+			uCamPos,
 			uTex,
-			uColour;
-	} surface3dMaterial;
+			uColour,
+			uSmoothness;
+	} surface3dProgram;
 	
 	static inline Tex whiteTex;
 	
@@ -272,6 +267,20 @@ namespace Gfx3d {
 		planeMesh,
 		cubeMesh;
 	
+	struct Cam {
+		glm::vec3 pos;
+		float pitch, yaw;
+	};
+	
+	static inline Cam cam;
+	
+	struct DrawMeshCommand {
+		Mesh const *mesh;
+		Tex const *tex;
+		glm::vec3 colour;
+		glm::mat4 mat;
+	};
+	
 	static inline std::vector<DrawMeshCommand>
 		drawMeshCommands;
 	
@@ -279,12 +288,14 @@ namespace Gfx3d {
 		surface3dVertShader = shaderLoad("assets/shaders/surface3d.vert.glsl", GL_VERTEX_SHADER);
 		surface3dFragShader = shaderLoad("assets/shaders/surface3d.frag.glsl", GL_FRAGMENT_SHADER);
 		
-		surface3dMaterial.program = programCreate(surface3dVertShader, surface3dFragShader);
-		surface3dMaterial.uModelMat = glGetUniformLocation(surface3dMaterial.program, "u_modelMat");
-		surface3dMaterial.uViewMat = glGetUniformLocation(surface3dMaterial.program, "u_viewMat");
-		surface3dMaterial.uProjMat = glGetUniformLocation(surface3dMaterial.program, "u_projMat");
-		surface3dMaterial.uTex = glGetUniformLocation(surface3dMaterial.program, "u_tex");
-		surface3dMaterial.uColour = glGetUniformLocation(surface3dMaterial.program, "u_colour");
+		surface3dProgram.handle = programCreate(surface3dVertShader, surface3dFragShader);
+		surface3dProgram.uModelMat = glGetUniformLocation(surface3dProgram.handle, "u_modelMat");
+		surface3dProgram.uViewMat = glGetUniformLocation(surface3dProgram.handle, "u_viewMat");
+		surface3dProgram.uProjMat = glGetUniformLocation(surface3dProgram.handle, "u_projMat");
+		surface3dProgram.uCamPos = glGetUniformLocation(surface3dProgram.handle, "u_camPos");
+		surface3dProgram.uTex = glGetUniformLocation(surface3dProgram.handle, "u_tex");
+		surface3dProgram.uColour = glGetUniformLocation(surface3dProgram.handle, "u_colour");
+		surface3dProgram.uSmoothness = glGetUniformLocation(surface3dProgram.handle, "u_smoothness");
 		
 		glm::u8vec4 white = glm::u8vec4(255, 255, 255, 255);
 		whiteTex = texCreate(&white, 1, 1, false, false);
@@ -295,23 +306,26 @@ namespace Gfx3d {
 	}
 	
 	static void draw(int clientW, int clientH) {
-		glClearColor(1.0f/3.0f, 2.0f/3.0f, 1.0, 1.0);
+		//glClearColor(1.0f/3.0f, 2.0f/3.0f, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glViewport(0, 0, clientW, clientH);
 		
 		glActiveTexture(GL_TEXTURE0);
 		
-		glUseProgram(surface3dMaterial.program);
+		glUseProgram(surface3dProgram.handle);
 		
 		glm::mat4 viewMat =
-			glm::translate(glm::vec3(0.0f, 0.0f, -3.0f));
+			glm::rotate(cam.pitch, glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::rotate(cam.yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::translate(-cam.pos);
 		glm::mat4 projMat =
 			glm::perspective(70.0f, clientW / (float)clientH, 0.01f, 300.0f);
 		
-		glUniformMatrix4fv(surface3dMaterial.uViewMat, 1, GL_FALSE, &viewMat[0][0]);
-		glUniformMatrix4fv(surface3dMaterial.uProjMat, 1, GL_FALSE, &projMat[0][0]);
-		glUniform1i(surface3dMaterial.uTex, 0);
+		glUniformMatrix4fv(surface3dProgram.uViewMat, 1, GL_FALSE, &viewMat[0][0]);
+		glUniformMatrix4fv(surface3dProgram.uProjMat, 1, GL_FALSE, &projMat[0][0]);
+		glUniform3f(surface3dProgram.uCamPos, cam.pos.x, cam.pos.y, cam.pos.z);
+		glUniform1i(surface3dProgram.uTex, 0);
 		
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -319,8 +333,8 @@ namespace Gfx3d {
 		for (DrawMeshCommand const &command : drawMeshCommands) {
 			glBindTexture(GL_TEXTURE_2D, command.tex->handle);
 			
-			glUniformMatrix4fv(surface3dMaterial.uModelMat, 1, GL_FALSE, &command.mat[0][0]);
-			glUniform3f(surface3dMaterial.uColour, command.colour.r, command.colour.g, command.colour.b);
+			glUniformMatrix4fv(surface3dProgram.uModelMat, 1, GL_FALSE, &command.mat[0][0]);
+			glUniform3f(surface3dProgram.uColour, command.colour.r, command.colour.g, command.colour.b);
 			
 			meshDraw(command.mesh);
 		}
@@ -331,30 +345,19 @@ namespace Gfx3d {
 		drawMeshCommands.clear();
 	}
 	
-	static void queueDrawSphere(float radius, glm::vec3 colour, glm::vec3 pos, glm::mat3 orientation) {
+	static void queueDrawMesh(
+		Mesh const *mesh,
+		Tex const *tex,
+		glm::vec3 colour,
+		glm::vec3 pos,
+		glm::vec3 scale,
+		glm::mat3 orientation
+	) {
 		drawMeshCommands.push_back(DrawMeshCommand{
-			.mesh = &sphereMesh,
-			.tex = &whiteTex,
+			.mesh = mesh,
+			.tex = tex,
 			.colour = colour,
-			.mat = glm::translate(pos) * glm::scale(glm::vec3(radius)) * glm::mat4(orientation)
-		});
-	}
-	
-	static void queueDrawPlane(glm::vec2 size, glm::vec3 colour, glm::vec3 pos, glm::mat3 orientation) {
-		drawMeshCommands.push_back(DrawMeshCommand{
-			.mesh = &planeMesh,
-			.tex = &whiteTex,
-			.colour = colour,
-			.mat = glm::translate(pos) * glm::mat4(orientation) * glm::scale(glm::vec3(size, 1.0f))
-		});
-	}
-	
-	static void queueDrawCuboid(glm::vec3 size, glm::vec3 colour, glm::vec3 pos, glm::mat3 orientation) {
-		drawMeshCommands.push_back(DrawMeshCommand{
-			.mesh = &cubeMesh,
-			.tex = &whiteTex,
-			.colour = colour,
-			.mat = glm::translate(pos) * glm::mat4(orientation) * glm::scale(size)
+			.mat = glm::translate(pos) * glm::scale(scale) * glm::mat4(orientation)
 		});
 	}
 }

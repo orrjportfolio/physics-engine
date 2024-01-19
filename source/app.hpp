@@ -7,7 +7,11 @@
 #include <glm/gtx/transform.hpp>
 #include <SDL2/SDL.h>
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl2.h"
+#include "imgui/imgui_impl_opengl3.h"
 #include "gfx3d.hpp"
+#include "game.hpp"
 
 namespace App {
 	static inline SDL_Window *window;
@@ -15,16 +19,15 @@ namespace App {
 	
 	static void init() {
 		Gfx3d::init();
+		
+		Game::init();
 	}
 	
-	static void update() {
+	static void update(float dt) {
 		int windowW, windowwH;
 		SDL_GetWindowSize(window, &windowW, &windowwH);
 		
-		float s = glm::sin(SDL_GetTicks() * 0.001f);
-		
-		Gfx3d::queueDrawPlane(glm::vec2(2.0f, 1.0f), glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(-0.5f, s, 0.0f), glm::rotate(s, glm::vec3(0.5f, 1.0f, 0.5f)));
-		Gfx3d::queueDrawCuboid(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 1.0f), glm::vec3(0.5f, -s, 0.0f), glm::rotate(s, glm::vec3(0.5f, 1.0f, 0.5f)));
+		Game::update(dt);
 		
 		Gfx3d::draw(windowW, windowwH);
 	}
@@ -82,17 +85,60 @@ namespace App {
 			}, nullptr);
 		#endif
 		
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO &io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+		ImGui_ImplOpenGL3_Init();
+		
 		init();
 		
 		SDL_ShowWindow(window);
 		
-		while (!SDL_HasEvent(SDL_QUIT)) {
-			SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-			SDL_PumpEvents();
+		float const targetFps = 60.0f;
+		float const targetFrameDur = 1000.0f / targetFps;
+		
+		float timer = 0.0f;
+		float frameTime = 0.0f;
+		
+		Uint32 startTime = SDL_GetTicks();
+		
+		bool shouldQuit = false;
+		
+		while (!shouldQuit) {
+			Uint32 time = SDL_GetTicks();
+			Uint32 elapsedTime = time - startTime;
 			
-			update();
+			timer += elapsedTime;
+			frameTime += elapsedTime;
 			
-			SDL_GL_SwapWindow(window);
+			startTime = time;
+			
+			if (timer >= targetFrameDur) {
+				SDL_Event e;
+				while (SDL_PollEvent(&e) != 0) {
+					if (e.type == SDL_QUIT) {
+						shouldQuit = true;
+					}
+					
+					ImGui_ImplSDL2_ProcessEvent(&e);
+				}
+				
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplSDL2_NewFrame();
+				ImGui::NewFrame();
+				
+				update(frameTime / 1000.0f);
+				
+				ImGui::Render();
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				
+				SDL_GL_SwapWindow(window);
+				
+				timer = fmod(timer, targetFrameDur);
+				frameTime = 0.0f;
+			}
 		}
 	}
 }
