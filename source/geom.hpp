@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+constexpr float EPSILON = 1.0f / 1024.0f;
+
 static void aabbVerts(glm::vec3 minPos, glm::vec3 maxPos, glm::vec3 *oVerts) {
 	oVerts[0] = minPos;
 	oVerts[1] = glm::vec3(maxPos.x, minPos.y, minPos.z);
@@ -76,10 +78,10 @@ static Overlap sphereAabbOverlap(
 
 static Overlap sphereObbOverlap(
 	glm::vec3 spherePos, float sphereRadius,
-	glm::vec3 obbPos, glm::vec3 obbMinPos, glm::vec3 obbMaxPos, glm::mat3 obbRot, glm::mat3 obbRotInv
+	glm::vec3 obbPos, glm::vec3 obbMinPos, glm::vec3 obbMaxPos, glm::mat3 const *obbRot, glm::mat3 const *obbRotInv
 ) {
-	glm::mat4 m = glm::translate(obbPos) * glm::mat4(obbRotInv) * glm::translate(-obbPos);
-	glm::mat4 mInv = glm::translate(obbPos) * glm::mat4(obbRot) * glm::translate(-obbPos);
+	glm::mat4 m = glm::translate(obbPos) * glm::mat4(*obbRotInv) * glm::translate(-obbPos);
+	glm::mat4 mInv = glm::translate(obbPos) * glm::mat4(*obbRot) * glm::translate(-obbPos);
 	
 	glm::vec3 mSpherePos = m * glm::vec4(spherePos, 1.0f);
 	glm::vec3 mP = glm::clamp(mSpherePos, obbMinPos, obbMaxPos);
@@ -309,10 +311,10 @@ static glm::vec3 sphereAabbContact(
 
 static glm::vec3 sphereObbContact(
 	glm::vec3 spherePos, float sphereRadius,
-	glm::vec3 obbPos, glm::vec3 obbMinPos, glm::vec3 obbMaxPos, glm::mat3 obbRot, glm::mat3 obbRotInv
+	glm::vec3 obbPos, glm::vec3 obbMinPos, glm::vec3 obbMaxPos, glm::mat3 const *obbRot, glm::mat3 const *obbRotInv
 ) {
-	glm::mat4 m = glm::translate(obbPos) * glm::mat4(obbRotInv) * glm::translate(-obbPos);
-	glm::mat4 mInv = glm::translate(obbPos) * glm::mat4(obbRot) * glm::translate(-obbPos);
+	glm::mat4 m = glm::translate(obbPos) * glm::mat4(*obbRotInv) * glm::translate(-obbPos);
+	glm::mat4 mInv = glm::translate(obbPos) * glm::mat4(*obbRot) * glm::translate(-obbPos);
 	
 	glm::vec3 mSpherePos = m * glm::vec4(spherePos, 1.0f);
 	glm::vec3 mP = glm::clamp(mSpherePos, obbMinPos, obbMaxPos);
@@ -327,4 +329,154 @@ static glm::vec3 spherePlaneContact(
 	float proj = glm::dot(spherePos, planeNorm) - planeDist;
 	
 	return spherePos + (((proj < 0.0f)? -planeNorm : planeNorm) * sphereRadius);
+}
+
+static void aabbAabbContacts(
+	glm::vec3 aMinPos, glm::vec3 aMaxPos,
+	glm::vec3 bMinPos, glm::vec3 bMaxPos,
+	glm::vec3 *oContacts
+) {
+	if (glm::abs(aMinPos.x - bMaxPos.x) < EPSILON) {
+		oContacts[0] = glm::vec3(aMinPos.x, glm::max(aMinPos.y, bMinPos.y), glm::max(aMinPos.z, bMinPos.z));
+		oContacts[1] = glm::vec3(aMinPos.x, glm::min(aMaxPos.y, bMaxPos.y), glm::max(aMinPos.z, bMinPos.z));
+		oContacts[2] = glm::vec3(aMinPos.x, glm::min(aMaxPos.y, bMaxPos.y), glm::min(aMaxPos.z, bMaxPos.z));
+		oContacts[3] = glm::vec3(aMinPos.x, glm::max(aMinPos.y, bMinPos.y), glm::min(aMaxPos.z, bMaxPos.z));
+	}
+	else if (glm::abs(bMinPos.x - aMaxPos.x) < EPSILON) {
+		oContacts[0] = glm::vec3(aMaxPos.x, glm::max(aMinPos.y, bMinPos.y), glm::max(aMinPos.z, bMinPos.z));
+		oContacts[1] = glm::vec3(aMaxPos.x, glm::min(aMaxPos.y, bMaxPos.y), glm::max(aMinPos.z, bMinPos.z));
+		oContacts[2] = glm::vec3(aMaxPos.x, glm::min(aMaxPos.y, bMaxPos.y), glm::min(aMaxPos.z, bMaxPos.z));
+		oContacts[3] = glm::vec3(aMaxPos.x, glm::max(aMinPos.y, bMinPos.y), glm::min(aMaxPos.z, bMaxPos.z));
+	}
+	else if (glm::abs(aMinPos.y - bMaxPos.y) < EPSILON) {
+		oContacts[0] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), aMinPos.y, glm::max(aMinPos.z, bMinPos.z));
+		oContacts[1] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), aMinPos.y, glm::max(aMinPos.z, bMinPos.z));
+		oContacts[2] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), aMinPos.y, glm::min(aMaxPos.z, bMaxPos.z));
+		oContacts[3] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), aMinPos.y, glm::min(aMaxPos.z, bMaxPos.z));
+	}
+	else if (glm::abs(bMinPos.y - aMaxPos.y) < EPSILON) {
+		oContacts[0] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), aMaxPos.y, glm::max(aMinPos.z, bMinPos.z));
+		oContacts[1] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), aMaxPos.y, glm::max(aMinPos.z, bMinPos.z));
+		oContacts[2] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), aMaxPos.y, glm::min(aMaxPos.z, bMaxPos.z));
+		oContacts[3] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), aMaxPos.y, glm::min(aMaxPos.z, bMaxPos.z));
+	}
+	else if (glm::abs(aMinPos.z - bMaxPos.z) < EPSILON) {
+		oContacts[0] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), glm::max(aMinPos.y, bMinPos.y), aMinPos.z);
+		oContacts[1] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), glm::max(aMinPos.y, bMinPos.y), aMinPos.z);
+		oContacts[2] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), glm::min(aMaxPos.y, bMaxPos.y), aMinPos.z);
+		oContacts[3] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), glm::min(aMaxPos.y, bMaxPos.y), aMinPos.z);
+	}
+	else if (glm::abs(bMinPos.z - aMaxPos.z) < EPSILON) {
+		oContacts[0] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), glm::max(aMinPos.y, bMinPos.y), aMaxPos.z);
+		oContacts[1] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), glm::max(aMinPos.y, bMinPos.y), aMaxPos.z);
+		oContacts[2] = glm::vec3(glm::min(aMaxPos.x, bMaxPos.x), glm::min(aMaxPos.y, bMaxPos.y), aMaxPos.z);
+		oContacts[3] = glm::vec3(glm::max(aMinPos.x, bMinPos.x), glm::min(aMaxPos.y, bMaxPos.y), aMaxPos.z);
+	}
+}
+
+static size_t obbObbContacts(
+	glm::vec3 aPos, glm::vec3 aMinPos, glm::vec3 aMaxPos, glm::mat3 const *aRotInv, glm::vec3 const *aVerts,
+	glm::vec3 bPos, glm::vec3 bMinPos, glm::vec3 bMaxPos, glm::mat3 const *bRotInv, glm::vec3 const *bVerts,
+	glm::vec3 *oContacts
+) {
+	size_t numContacts = 0;
+	glm::vec3 contacts[16];
+	
+	auto const f = [&](
+		glm::vec3 const *aVerts,
+		glm::vec3 bPos, glm::vec3 bMinPos, glm::vec3 bMaxPos, glm::mat3 const *bRotInv
+	) {
+		glm::mat4 m = glm::translate(bPos) * glm::mat4(*bRotInv) * glm::translate(-bPos);
+		
+		for (size_t i = 0; i < 8; i++) {
+			glm::vec3 mV = m * glm::vec4(aVerts[i], 1.0f);
+			glm::vec3 mP = glm::clamp(mV, bMinPos, bMaxPos);
+			glm::vec3 mDiff = glm::abs(mP - mV);
+			if (mDiff.x < EPSILON && mDiff.y < EPSILON && mDiff.z < EPSILON) {
+				if (numContacts == 16) { break; }
+				
+				contacts[numContacts++] = aVerts[i];
+			}
+		}
+	};
+	
+	f(aVerts, bPos, bMinPos, bMaxPos, bRotInv);
+	f(bVerts, aPos, aMinPos, aMaxPos, aRotInv);
+	
+	std::pair<size_t, size_t> edges[] = {
+		std::pair<size_t, size_t>(0, 1),
+		std::pair<size_t, size_t>(1, 2),
+		std::pair<size_t, size_t>(2, 3),
+		std::pair<size_t, size_t>(3, 0),
+		
+		std::pair<size_t, size_t>(4, 5),
+		std::pair<size_t, size_t>(5, 6),
+		std::pair<size_t, size_t>(6, 7),
+		std::pair<size_t, size_t>(7, 4),
+		
+		std::pair<size_t, size_t>(0, 4),
+		std::pair<size_t, size_t>(1, 5),
+		std::pair<size_t, size_t>(2, 6),
+		std::pair<size_t, size_t>(3, 7),
+	};
+	
+	for (size_t i = 0; i < 12; i++) {
+		for (size_t j = 0; j < 12; j++) {
+			// Algorithm for computing the distance
+			// between two line segments courtesy of
+			// ChatGPT
+			
+			std::pair<size_t, size_t> edgeA = edges[i];
+			std::pair<size_t, size_t> edgeB = edges[j];
+			glm::vec3 a1 = aVerts[edgeA.first], a2 = aVerts[edgeA.second];
+			glm::vec3 b1 = bVerts[edgeB.first], b2 = bVerts[edgeB.second];
+			
+			glm::vec3 u = a2 - a1;
+			glm::vec3 v = b2 - b1;
+			glm::vec3 w = a1 - b1;
+			
+			float a = glm::dot(u, u);
+			float b = glm::dot(u, v);
+			float c = glm::dot(v, v);
+			float d = glm::dot(u, w);
+			float e = glm::dot(v, w);
+			
+			float dd = (a * c) - (b * b);
+			
+			float sc, tc;
+			if (dd < 1e-6) {
+				sc = 0.0f;
+				tc = (b > c)? (d / b) : (e / c);
+			}
+			else {
+				sc = ((b * e) - (c * d)) / dd;
+				tc = ((a * e) - (b * d)) / dd;
+			}
+			
+			sc = glm::clamp(sc, 0.0f, 1.0f);
+			tc = glm::clamp(tc, 0.0f, 1.0f);
+			
+			glm::vec3 vec = w + (sc * u) - (tc * v);
+			
+			if (glm::length(vec) < EPSILON) {
+				if (numContacts == 16) { break; }
+				
+				contacts[numContacts++] = a1 + (sc * (a2 - a1));
+			}
+		}
+	}
+	
+	for (size_t i = 0; i < glm::min(numContacts, (size_t)4); i++) {
+		for (size_t j = i + 1; j < numContacts; j++) {
+			glm::vec3 diff = glm::abs(contacts[j] - contacts[i]);
+			
+			if (diff.x < EPSILON && diff.y < EPSILON && diff.z < EPSILON) {
+				contacts[j--] = contacts[--numContacts];
+			}
+		}
+		
+		oContacts[i] = contacts[i];
+	}
+	
+	return glm::min(numContacts, (size_t)4);
 }
