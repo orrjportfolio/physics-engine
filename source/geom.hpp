@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iostream>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -278,16 +279,16 @@ static Overlap obbPlaneOverlap(
 		glm::vec3 norm;
 		if (planeDist - min < max - planeDist) {
 			depth = planeDist - min;
-			norm = -planeNorm;
+			norm = planeNorm;
 		}
 		else {
 			depth = max - planeDist;
-			norm = planeNorm;
+			norm = -planeNorm;
 		}
 		
 		return Overlap{
 			.exists = true,
-			.norm = planeNorm,
+			.norm = norm,
 			.depth = depth
 		};
 	}
@@ -328,7 +329,7 @@ static glm::vec3 spherePlaneContact(
 ) {
 	float proj = glm::dot(spherePos, planeNorm) - planeDist;
 	
-	return spherePos + (((proj < 0.0f)? -planeNorm : planeNorm) * sphereRadius);
+	return spherePos + (((proj < 0.0f)? planeNorm : -planeNorm) * sphereRadius);
 }
 
 static void aabbAabbContacts(
@@ -479,4 +480,23 @@ static size_t obbObbContacts(
 	}
 	
 	return glm::min(numContacts, (size_t)4);
+}
+
+static size_t obbPlaneContacts(
+	glm::vec3 const *obbVerts,
+	glm::vec3 planeNorm, float planeDist,
+	glm::vec3 *oContacts
+) {
+	size_t numContacts = 0;
+	
+	for (size_t i = 0; i < 8; i++) {
+		float dist = glm::abs(glm::dot(obbVerts[i], planeNorm) - planeDist);
+		if (dist < EPSILON) {
+			oContacts[numContacts++] = obbVerts[i];
+			
+			if (numContacts == 4) { break; }
+		}
+	}
+	
+	return numContacts;
 }
