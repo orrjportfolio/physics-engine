@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>

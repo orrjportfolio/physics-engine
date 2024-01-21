@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -118,6 +117,7 @@ static Tex texLoad(char const *path, bool mipmap) {
 	return tex;
 }
 
+
 struct Vertex3d {
 	glm::vec3 pos;
 	glm::i16vec3 norm;
@@ -131,10 +131,9 @@ struct Mesh3d {
 		GLuint bufs[2];
 	};
 	size_t numIndices;
-	GLenum primitiveKind;
 };
 
-static Mesh3d mesh3dCreate(std::span<Vertex3d const> vertices, std::span<uint16_t const> indices, GLenum primitiveKind) {
+static Mesh3d mesh3dCreate(std::span<Vertex3d const> vertices, std::span<uint16_t const> indices) {
 	Mesh3d mesh;
 	
 	glGenVertexArrays(1, &mesh.array);
@@ -148,7 +147,6 @@ static Mesh3d mesh3dCreate(std::span<Vertex3d const> vertices, std::span<uint16_
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3d), (void*)offsetof(Vertex3d, pos));
 	glVertexAttribPointer(1, 3, GL_SHORT, GL_TRUE, sizeof(Vertex3d), (void*)offsetof(Vertex3d, norm));
@@ -158,8 +156,6 @@ static Mesh3d mesh3dCreate(std::span<Vertex3d const> vertices, std::span<uint16_
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), GL_STATIC_DRAW);
 	
 	mesh.numIndices = indices.size();
-	
-	mesh.primitiveKind = primitiveKind;
 	
 	return mesh;
 }
@@ -234,128 +230,73 @@ static Mesh3d mesh3dLoad(char const *path) {
 	
 	free(sb);
 	
-	return mesh3dCreate(vertices, indices, GL_TRIANGLES);
+	return mesh3dCreate(vertices, indices);
 }
 
 static void mesh3dDraw(Mesh3d const *mesh) {
 	glBindVertexArray(mesh->array);
 	
-	glDrawElements(mesh->primitiveKind, mesh->numIndices, GL_UNSIGNED_SHORT, (void*)0);
+	glDrawElements(GL_TRIANGLES, mesh->numIndices, GL_UNSIGNED_SHORT, (void*)0);
 }
 
-static inline GLuint
-	gfx3dSurface3dVertShader,
-	gfx3dSurface3dFragShader;
-
-static inline struct {
-	GLuint handle;
-	GLint
-		uModelMat,
-		uViewMat,
-		uProjMat,
-		uCamPos,
-		uTex,
-		uColour,
-		uSmoothness;
-} gfx3dSurface3dProgram;
-
-static inline Tex gfx3dWhiteTex;
-
-static inline Mesh3d
-	gfx3dSphereMesh,
-	gfx3dPlaneMesh,
-	gfx3dCubeMesh;
-
-struct Cam {
-	glm::vec3 pos;
-	float pitch, yaw;
-};
-
-static inline Cam gfx3dCam;
-
-struct DrawMeshCommand {
-	Mesh3d const *mesh;
-	Tex const *tex;
-	glm::vec3 colour;
-	glm::mat4 mat;
-};
-
-static inline std::vector<DrawMeshCommand>
-	gfx3dDrawMeshCommands;
-
-static void gfx3dInit() {
-	gfx3dSurface3dVertShader = shaderLoad("assets/shaders/surface3d.vert.glsl", GL_VERTEX_SHADER);
-	gfx3dSurface3dFragShader = shaderLoad("assets/shaders/surface3d.frag.glsl", GL_FRAGMENT_SHADER);
+static Mesh3d debugMesh3dCreate(std::span<glm::vec3 const> vertices, std::span<uint16_t> indices) {
+	Mesh3d mesh;
 	
-	gfx3dSurface3dProgram.handle = programCreate(gfx3dSurface3dVertShader, gfx3dSurface3dFragShader);
-	gfx3dSurface3dProgram.uModelMat = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_modelMat");
-	gfx3dSurface3dProgram.uViewMat = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_viewMat");
-	gfx3dSurface3dProgram.uProjMat = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_projMat");
-	gfx3dSurface3dProgram.uCamPos = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_camPos");
-	gfx3dSurface3dProgram.uTex = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_tex");
-	gfx3dSurface3dProgram.uColour = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_colour");
-	gfx3dSurface3dProgram.uSmoothness = glGetUniformLocation(gfx3dSurface3dProgram.handle, "u_smoothness");
+	glGenVertexArrays(1, &mesh.array);
+	glBindVertexArray(mesh.array);
 	
-	glm::u8vec4 white = glm::u8vec4(255, 255, 255, 255);
-	gfx3dWhiteTex = texCreate(&white, 1, 1, false, false);
+	glGenBuffers(2, mesh.bufs);
 	
-	gfx3dSphereMesh = mesh3dLoad("assets/models/sphere.obj");
-	gfx3dPlaneMesh = mesh3dLoad("assets/models/plane.obj");
-	gfx3dCubeMesh = mesh3dLoad("assets/models/cube.obj");
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexBuf);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
+	
+	glEnableVertexAttribArray(0);
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuf);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), GL_STATIC_DRAW);
+	
+	mesh.numIndices = indices.size();
+	
+	return mesh;
 }
 
-static void gfx3dDraw(int clientW, int clientH) {
-	//glClearColor(1.0f/3.0f, 2.0f/3.0f, 1.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+static Mesh3d debugMesh3dLoad(char const *path) {
+	std::vector<glm::vec3> vertices;
+	std::vector<uint16_t> indices;
 	
-	glViewport(0, 0, clientW, clientH);
+	char *sb = strLoad(path, nullptr);
 	
-	glActiveTexture(GL_TEXTURE0);
-	
-	glUseProgram(gfx3dSurface3dProgram.handle);
-	
-	glm::mat4 viewMat =
-		glm::rotate(gfx3dCam.pitch, glm::vec3(1.0f, 0.0f, 0.0f)) *
-		glm::rotate(gfx3dCam.yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
-		glm::translate(-gfx3dCam.pos);
-	glm::mat4 projMat =
-		glm::perspective(70.0f, clientW / (float)clientH, 0.01f, 300.0f);
-	
-	glUniformMatrix4fv(gfx3dSurface3dProgram.uViewMat, 1, GL_FALSE, &viewMat[0][0]);
-	glUniformMatrix4fv(gfx3dSurface3dProgram.uProjMat, 1, GL_FALSE, &projMat[0][0]);
-	glUniform3f(gfx3dSurface3dProgram.uCamPos, gfx3dCam.pos.x, gfx3dCam.pos.y, gfx3dCam.pos.z);
-	glUniform1i(gfx3dSurface3dProgram.uTex, 0);
-	
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	
-	for (DrawMeshCommand const &command : gfx3dDrawMeshCommands) {
-		glBindTexture(GL_TEXTURE_2D, command.tex->handle);
+	char *s = sb;
+	while (*s != '\0') {
+		if (*s == 'v') {
+			s++;
+			
+			float x = strtod(s, &s);
+			float y = strtod(s, &s);
+			float z = strtod(s, &s);
+			vertices.push_back(glm::vec3(x, y, z));
+		}
+		else if (*s == 'l') {
+			s++;
+			
+			for (int i = 0; i < 2; i++) {
+				unsigned long index = strtoul(s, &s, 10);
+				indices.push_back((uint16_t)(index - 1));
+			}
+		}
 		
-		glUniformMatrix4fv(gfx3dSurface3dProgram.uModelMat, 1, GL_FALSE, &command.mat[0][0]);
-		glUniform3f(gfx3dSurface3dProgram.uColour, command.colour.r, command.colour.g, command.colour.b);
-		
-		mesh3dDraw(command.mesh);
+		while (*s++ != '\n') { }
 	}
 	
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
+	free(sb);
 	
-	gfx3dDrawMeshCommands.clear();
+	return debugMesh3dCreate(vertices, indices);
 }
 
-static void gfx3dQueueDrawMesh(
-	Mesh3d const *mesh,
-	Tex const *tex,
-	glm::vec3 colour,
-	glm::vec3 pos,
-	glm::vec3 scale,
-	glm::mat3 orientation
-) {
-	gfx3dDrawMeshCommands.push_back(DrawMeshCommand{
-		.mesh = mesh,
-		.tex = tex,
-		.colour = colour,
-		.mat = glm::translate(pos) * glm::mat4(orientation) * glm::scale(scale)
-	});
+static void debugMesh3dDraw(Mesh3d const *mesh) {
+	glBindVertexArray(mesh->array);
+	
+	glDrawElements(GL_LINES, mesh->numIndices, GL_UNSIGNED_SHORT, (void*)0);
 }
