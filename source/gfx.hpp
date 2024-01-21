@@ -300,3 +300,10 @@ static void debugMesh3dDraw(Mesh3d const *mesh) {
 	
 	glDrawElements(GL_LINES, mesh->numIndices, GL_UNSIGNED_SHORT, (void*)0);
 }
+
+
+struct DebugPoint3dVertex {
+	glm::vec3 pos;
+	glm::vec3 colour;
+};
+

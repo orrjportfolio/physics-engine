@@ -51,11 +51,6 @@ struct DrawDebug3dCommand {
 static inline std::vector<DrawDebug3dCommand>
 	drawDebug3dCommands;
 
-struct DebugPoint3dVertex {
-	glm::vec3 pos;
-	glm::vec3 colour;
-};
-
 static void draw3d(int clientW, int clientH, float dt) {
 	glUseProgram(surface3dProgram.handle);
 	

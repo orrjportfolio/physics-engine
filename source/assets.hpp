@@ -99,8 +99,8 @@ static void loadAssets() {
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (void*)0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (void*)sizeof(glm::vec3));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugPoint3dVertex), (void*)offsetof(DebugPoint3dVertex, pos));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugPoint3dVertex), (void*)offsetof(DebugPoint3dVertex, colour));
 	
 	scratchDebugMesh.numVertices = 0;
 }

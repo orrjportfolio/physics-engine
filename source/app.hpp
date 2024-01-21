@@ -1,11 +1,8 @@
 
 #include <cassert>
-#include <chrono>
 #include <iostream>
 
 #include <GL/gl3w.h>
-#include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
 #include <SDL2/SDL.h>
 
 #include "imgui/imgui.h"
@@ -13,96 +10,37 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include "assets.hpp"
 #include "draw3d.hpp"
-#include "game.hpp"
+#include "entity.hpp"
 
 static inline SDL_Window *window;
 static inline SDL_GLContext glContext;
 
-static glm::vec3 spheres[1000];
-
 static void appInit() {
 	loadAssets();
 	
-	gameInit();
-	
-	for (int i = 0; i < 1000; i++) {
-		spheres[i] = glm::vec3(
-			(rand() / (float)RAND_MAX) * 100.0f,
-			(rand() / (float)RAND_MAX) * 100.0f,
-			(rand() / (float)RAND_MAX) * 100.0f
-		);
-	}
+	EntityId e = entityCreate(
+		glm::vec3(0.0f, 0.0f, -5.0f),
+		glm::vec3(1.0f),
+		glm::identity<glm::mat3>()
+	);
+	entityAddMesh(
+		e,
+		&sphereMesh,
+		&whiteTex,
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::vec3(0.0f)
+	);
 }
 
 static void appUpdate(float dt) {
 	int windowW, windowH;
 	SDL_GetWindowSize(window, &windowW, &windowH);
 	
-	gameUpdate(dt);
-	
-	static float time;
-	time += dt;
-	
-	Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
-	glm::ivec2 mouseVel;
-	Uint32 mouseButtons = SDL_GetRelativeMouseState(&mouseVel.x, &mouseVel.y);
-	
-	if (mouseButtons & SDL_BUTTON_RMASK) {
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		
-		cam3d.pitch += mouseVel.y * 0.5f * dt;
-		cam3d.yaw += mouseVel.x * 0.5f * dt;
-		
-		glm::mat3 mat =
-			glm::rotate(-cam3d.yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::rotate(-cam3d.pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-		glm::vec3 right = mat * glm::vec3(1.0f, 0.0f, 00.0f);
-		glm::vec3 up = mat * glm::vec3(0.0f, 1.0f, 0.0f);
-		glm::vec3 back = mat * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-		
-		if (keysHeld[SDL_SCANCODE_A]) { cam3d.pos -= right * 10.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_D]) { cam3d.pos += right * 10.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_Q]) { cam3d.pos -= up * 10.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_E]) { cam3d.pos += up * 10.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_W]) { cam3d.pos -= back * 10.0f * dt; }
-		if (keysHeld[SDL_SCANCODE_S]) { cam3d.pos += back * 10.0f * dt; }
-	}
-	else {
-		SDL_SetRelativeMouseMode(SDL_FALSE);
-	}
-	
-	static bool prevHeldSpace = false;
-	bool heldSpace = keysHeld[SDL_SCANCODE_SPACE];
-	for (int i = 0; i < 1000; i++) {
-		glm::vec3 pos = spheres[i];
-		
-		if (heldSpace && !prevHeldSpace) {
-			queueDrawDebugSphere(pos, 0.55f, glm::rotate(time, glm::vec3(1.0f, 1.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f), false, 2.0f);
-			//queueDrawDebugCube(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(2.0f), glm::rotate(time, glm::vec3(1.0f, 1.0f, 1.0f)), glm::vec3(0.0f, 1.0f, 0.0f), true, 1.0f);
-			queueDrawDebugLine(glm::vec3(0.0f, 0.0f, 0.0f), pos, glm::vec3(1.0f, 1.0f, 0.0f), true, 2.0f);
-			queueDrawDebugPoint(pos, glm::vec3(1.0f, 0.0f, 0.0f), true, 2.0f);
-		}
-		queueDrawMesh3d(
-			&sphereMesh,
-			&whiteTex,
-			glm::vec3(1.0f, 1.0f, 1.0f),
-			pos,
-			glm::vec3(0.5f),
-			glm::identity<glm::mat3>()
-		);
-	}
-	prevHeldSpace = heldSpace;
+	queueDrawEntityMeshes();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	glViewport(0, 0, windowW, windowH);
-	
-	auto start = std::chrono::system_clock::now();
-	
 	draw3d(windowW, windowH, dt);
-	
-	auto end = std::chrono::system_clock::now();
-	std::cout << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0f) << " ms\n";
 }
 
 static void appRun() {
