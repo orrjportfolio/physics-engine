@@ -7,7 +7,6 @@ in layout(location=2) vec2 v_uv;
 out vec3 f_pos;
 out vec3 f_norm;
 out vec2 f_uv;
-out mat4 f_normMat;
 
 uniform mat4
 	u_modelMat,
@@ -20,8 +19,6 @@ void main() {
 	
 	gl_Position = u_projMat * modelViewMat * vec4(v_pos, 1.0);
 	
-	f_pos = v_pos;
 	f_norm = (normMat * vec4(v_norm, 1.0)).xyz;
 	f_uv = v_uv;
-	f_normMat = normMat;
 }

@@ -15,18 +15,20 @@
 static inline SDL_Window *window;
 static inline SDL_GLContext glContext;
 
+static inline EntityId testEntity;
+
 static void appInit() {
 	loadAssets();
 	
-	EntityId e = entityCreate(
+	testEntity = entityCreate(
 		glm::vec3(0.0f, 0.0f, -5.0f),
 		glm::vec3(1.0f),
 		glm::identity<glm::mat3>()
 	);
 	entityAddMesh(
-		e,
+		testEntity,
 		&sphereMesh,
-		&whiteTex,
+		&smileTex,
 		glm::vec3(1.0f, 1.0f, 1.0f),
 		glm::vec3(0.0f)
 	);
@@ -35,6 +37,11 @@ static void appInit() {
 static void appUpdate(float dt) {
 	int windowW, windowH;
 	SDL_GetWindowSize(window, &windowW, &windowH);
+	
+	static float time;
+	time += dt;
+	
+	entityTransforms[testEntity.slot].rot = glm::rotate(time, glm::vec3(0.0f, 1.0f, 0.0f));
 	
 	queueDrawEntityMeshes();
 	

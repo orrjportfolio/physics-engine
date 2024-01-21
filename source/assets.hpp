@@ -36,7 +36,9 @@ static inline struct {
 		uProjMat;
 } debugPoint3dProgram;
 
-static inline Tex whiteTex;
+static inline Tex
+	whiteTex,
+	smileTex;
 
 static inline Mesh3d
 	sphereMesh,
@@ -81,6 +83,7 @@ static void loadAssets() {
 	
 	glm::u8vec4 white = glm::u8vec4(255, 255, 255, 255);
 	whiteTex = texCreate(&white, 1, 1, false, false);
+	smileTex = texLoad("assets/textures/smile.png", false);
 	
 	sphereMesh = mesh3dLoad("assets/models/sphere.obj");
 	planeMesh = mesh3dLoad("assets/models/plane.obj");
