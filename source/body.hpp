@@ -415,7 +415,7 @@ static void bodyCollide(
 	a->rotVel = glm::inverse(a->inertiaTensor) * a->rotMom;
 	b->rotVel = glm::inverse(b->inertiaTensor) * b->rotMom;
 	
-	/*float sf = a->sFriction + ((b->sFriction - a->sFriction) / 2.0f);
+	float sf = a->sFriction + ((b->sFriction - a->sFriction) / 2.0f);
 	float df = a->dFriction + ((b->dFriction - a->dFriction) / 2.0f);
 	
 	glm::vec3 frictionImpulses[4];
@@ -423,12 +423,10 @@ static void bodyCollide(
 	for (size_t i = 0; i < numContacts; i++) {
 		glm::vec3 contact = contacts[i];
 		
-		//queueDrawDebugPoint(contact, glm::vec3(1.0f, 1.0f, 0.0f), true, 0.5f);
-		
 		glm::vec3 velA = a->isStatic? glm::vec3(0.0f) : a->vel;
 		glm::vec3 velB = b->isStatic? glm::vec3(0.0f) : b->vel;
-		glm::vec3 rotVelA = a->isStatic? glm::vec3(0.0f) : a->rotVel;
-		glm::vec3 rotVelB = b->isStatic? glm::vec3(0.0f) : b->rotVel;
+		glm::vec3 rotVelA = (a->isStatic || a->kind == BODY_AABB)? glm::vec3(0.0f) : a->rotVel;
+		glm::vec3 rotVelB = (b->isStatic || b->kind == BODY_AABB)? glm::vec3(0.0f) : b->rotVel;
 		glm::vec3 ap = contact - *aPos;
 		glm::vec3 bp = contact - *bPos;
 		velA += glm::cross(rotVelA, ap);
@@ -436,10 +434,11 @@ static void bodyCollide(
 		glm::vec3 velAB = velA - velB;
 		glm::vec3 velBA = velB - velA;
 		
-		glm::vec3 tan = velBA - (overlap.norm * (glm::dot(velBA, norm)));
+		glm::vec3 tan = velAB - (norm * (glm::dot(velAB, norm)));
 		
-		glm::mat3 aInertiaTensorInv = a->isStatic? glm::mat3(0.0f) : glm::inverse(a->inertiaTensor);
-		glm::mat3 bInertiaTensorInv = b->isStatic? glm::mat3(0.0f) : glm::inverse(b->inertiaTensor);
+		if (glm::length(tan) < 0.01f) {
+			frictionImpulses[i] = glm::vec3(0.0f);
+		}
 		
 		float jT =
 			glm::dot(-velAB, tan) / (
@@ -467,16 +466,16 @@ static void bodyCollide(
 		if (!a->isStatic) {
 			glm::vec3 ap = contact - *aPos;
 			a->vel += frictionImpulse / a->mass;
-			a->rotMom += glm::inverse(a->inertiaTensor) * glm::cross(ap, frictionImpulse);
+			a->rotMom += glm::cross(ap, frictionImpulse);
 		}
 		
 		if (!b->isStatic) {
 			glm::vec3 bp = contact - *bPos;
-			b->vel -= -frictionImpulse / b->mass;
-			b->rotMom -= glm::inverse(a->inertiaTensor) * glm::cross(bp, -frictionImpulse);
+			b->vel += -frictionImpulse / b->mass;
+			b->rotMom += glm::cross(bp, -frictionImpulse);
 		}
-	}*/
+	}
 	
-	//std::cout << "A: " << a->rotVel.x << ", " << a->rotVel.y << ", " << a->rotVel.z << '\n';
-	//std::cout << "B: " << b->rotVel.x << ", " << b->rotVel.y << ", " << b->rotVel.z << '\n';
+	a->rotVel = glm::inverse(a->inertiaTensor) * a->rotMom;
+	b->rotVel = glm::inverse(b->inertiaTensor) * b->rotMom;
 }

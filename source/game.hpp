@@ -69,17 +69,34 @@ static void gameInit() {
 				0.25f
 			);
 		}
+		else if (kind == 2) {
+			entityAddMesh(
+				e,
+				&cubeMesh,
+				glm::vec3(0.0f),
+				glm::vec3(radius * 2.0f),
+				&whiteTex,
+				glm::vec3(1.0f, 0.0f, 1.0f)
+			);
+			entityAddAabbBody(
+				e,
+				glm::vec3(radius * 2.0f),
+				1.0f,
+				0.5f, 0.4f,
+				0.25f
+			);
+		}
 	};
 	
-	srand(/*2*/6);
-	for (int i = 0; i < 10; i++) {
+	srand(/*2*/2);
+	for (int i = 0; i < 40; i++) {
 		int kind = rand() % 2;
 		glm::vec3 pos = glm::vec3(
-			((rand() / (float)RAND_MAX) * 10.0f) - 5.0f,
-			((rand() / (float)RAND_MAX) * 10.0f) + ((kind == 1)? 11.0f : 1.0f),
-			((rand() / (float)RAND_MAX) * 10.0f) - 5.0f
+			((rand() / (float)RAND_MAX) * 20.0f) - 10.0f,
+			((rand() / (float)RAND_MAX) * 20.0f) + 2.0f,
+			((rand() / (float)RAND_MAX) * 20.0f) - 10.0f
 		);
-		addSphere(rand() % 2, pos, 1.0f);
+		addSphere(rand() % 3, pos, 1.0f);
 	}
 	
 	/*addSphere(0, glm::vec3(-2.0f, 5.0f, 0.0f), 1.0f);
