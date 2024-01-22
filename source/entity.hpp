@@ -148,14 +148,16 @@ static void entityAddSphereBody(
 	EntityId entity,
 	float radius,
 	float density,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateSphere(
 		entityTransforms[entity.slot].rot,
 		radius,
 		density,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 
@@ -163,13 +165,15 @@ static void entityAddAabbBody(
 	EntityId entity,
 	glm::vec3 size,
 	float density,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateAabb(
 		size,
 		density,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 
@@ -177,51 +181,59 @@ static void entityAddObbBody(
 	EntityId entity,
 	glm::vec3 size,
 	float density,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateObb(
 		entityTransforms[entity.slot].rot,
 		size,
 		density,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 
 static void entityAddStaticSphereBody(
 	EntityId entity,
 	float radius,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateStaticSphere(
 		entityTransforms[entity.slot].rot,
 		radius,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 
 static void entityAddStaticAabbBody(
 	EntityId entity,
 	glm::vec3 size,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateStaticAabb(
 		size,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 
 static void entityAddStaticObbBody(
 	EntityId entity,
 	glm::vec3 size,
-	float sFriction, float dFriction
+	float sFriction, float dFriction,
+	float restitution
 ) {
 	entitySlots[entity.slot].flags |= ENTITY_HAS_BODY;
 	entityBodies[entity.slot] = bodyCreateStaticObb(
 		size,
-		sFriction, dFriction
+		sFriction, dFriction,
+		restitution
 	);
 }
 

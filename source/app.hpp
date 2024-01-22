@@ -27,7 +27,15 @@ static void appUpdate(float dt) {
 	
 	gameUpdate(dt);
 	
-	simulateEntityBodies(glm::vec3(0.0f, -9.8f, 0.0f), dt);
+	Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
+	static bool prevSpaceHeld = false;
+	bool spaceHeld = keysHeld[SDL_SCANCODE_SPACE];
+	if (spaceHeld/* && !prevSpaceHeld*/) {
+	//for (int i = 0; i < 10; i++) {
+		simulateEntityBodies(glm::vec3(0.0f, -9.8f, 0.0f), (1.0f / 60.0f) * 1.0f);
+	//}
+	}
+	prevSpaceHeld = spaceHeld;
 	
 	queueDrawEntityMeshes();
 	

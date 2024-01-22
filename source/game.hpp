@@ -6,34 +6,86 @@
 #include "draw3d.hpp"
 
 static inline EntityId ground;
-static inline EntityId testEntity;
 
 static void gameInit() {
+	cam3d.pos = glm::vec3(0.0f, 3.0f, -20.0f);
+	cam3d.yaw = (float)M_PI;
+	
 	ground = entityCreate(
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::identity<glm::mat3>()
 	);
-	entityAddMesh(ground, &cubeMesh, glm::vec3(0.0f), glm::vec3(20.0f, 1.0f, 20.0f), &whiteTex, glm::vec3(0.5f, 0.5f, 0.5f));
-	entityAddStaticAabbBody(ground, glm::vec3(20.0f, 1.0f, 20.0f), 0.5f, 0.5f);
-	
-	testEntity = entityCreate(
-		glm::vec3(0.0f, 5.0f, 0.0f),
-		glm::identity<glm::mat3>()
-	);
 	entityAddMesh(
-		testEntity,
-		&sphereMesh,
+		ground,
+		&cubeMesh,
 		glm::vec3(0.0f),
-		glm::vec3(1.0f),
-		&smileTex,
-		glm::vec3(1.0f, 1.0f, 1.0f)
+		glm::vec3(20.0f, 1.0f, 20.0f),
+		&whiteTex,
+		glm::vec3(0.5f, 0.5f, 0.5f)
 	);
-	entityAddSphereBody(
-		testEntity,
-		1.0f,
-		1.0f,
-		0.5f, 0.5f
+	entityAddStaticAabbBody(
+		ground,
+		glm::vec3(20.0f, 1.0f, 20.0f),
+		0.5f, 0.4f,
+		0.25f
 	);
+	
+	auto const addSphere = [](int kind, glm::vec3 pos, float radius) {
+		EntityId e = entityCreate(
+			pos,
+			glm::identity<glm::mat3>()
+		);
+		if (kind == 0) {
+			entityAddMesh(
+				e,
+				&sphereMesh,
+				glm::vec3(0.0f),
+				glm::vec3(radius),
+				&smileTex,
+				glm::vec3(1.0f, 1.0f, 1.0f)
+			);
+			entityAddSphereBody(
+				e,
+				radius,
+				1.0f,
+				0.5f, 0.4f,
+				0.25f
+			);
+		}
+		else if (kind == 1) {
+			entityAddMesh(
+				e,
+				&cubeMesh,
+				glm::vec3(0.0f),
+				glm::vec3(radius * 2.0f),
+				&whiteTex,
+				glm::vec3(1.0f, 1.0f, 1.0f)
+			);
+			entityAddObbBody(
+				e,
+				glm::vec3(radius * 2.0f),
+				1.0f,
+				0.5f, 0.4f,
+				0.25f
+			);
+		}
+	};
+	
+	srand(/*2*/6);
+	for (int i = 0; i < 10; i++) {
+		int kind = rand() % 2;
+		glm::vec3 pos = glm::vec3(
+			((rand() / (float)RAND_MAX) * 10.0f) - 5.0f,
+			((rand() / (float)RAND_MAX) * 10.0f) + ((kind == 1)? 11.0f : 1.0f),
+			((rand() / (float)RAND_MAX) * 10.0f) - 5.0f
+		);
+		addSphere(rand() % 2, pos, 1.0f);
+	}
+	
+	/*addSphere(0, glm::vec3(-2.0f, 5.0f, 0.0f), 1.0f);
+	addSphere(0, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f);
+	addSphere(1, glm::vec3(2.0f, 5.0f, 0.0f), 1.0f);*/
+	
 }
 
 static void gameUpdate(float dt) {
@@ -64,12 +116,5 @@ static void gameUpdate(float dt) {
 	}
 	else {
 		SDL_SetRelativeMouseMode(SDL_FALSE);
-	}
-	
-	if (keysHeld[SDL_SCANCODE_UP]) {
-		entityBodies[testEntity.slot].torque += glm::vec3(10.0f, 0.0f, 0.0f);
-	}
-	if (keysHeld[SDL_SCANCODE_DOWN]) {
-		entityBodies[testEntity.slot].torque -= glm::vec3(10.0f, 0.0f, 0.0f);
 	}
 }

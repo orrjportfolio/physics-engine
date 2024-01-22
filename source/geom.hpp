@@ -392,7 +392,7 @@ static size_t obbObbContacts(
 			glm::vec3 mV = m * glm::vec4(aVerts[i], 1.0f);
 			glm::vec3 mP = glm::clamp(mV, bMinPos, bMaxPos);
 			glm::vec3 mDiff = glm::abs(mP - mV);
-			if (mDiff.x < EPSILON && mDiff.y < EPSILON && mDiff.z < EPSILON) {
+			if (mDiff.x < 0.01 && mDiff.y < 0.01 && mDiff.z < 0.01) {
 				if (numContacts == 16) { break; }
 				
 				contacts[numContacts++] = aVerts[i];
@@ -422,10 +422,6 @@ static size_t obbObbContacts(
 	
 	for (size_t i = 0; i < 12; i++) {
 		for (size_t j = 0; j < 12; j++) {
-			// Algorithm for computing the distance
-			// between two line segments courtesy of
-			// ChatGPT
-			
 			std::pair<size_t, size_t> edgeA = edges[i];
 			std::pair<size_t, size_t> edgeB = edges[j];
 			glm::vec3 a1 = aVerts[edgeA.first], a2 = aVerts[edgeA.second];
@@ -458,7 +454,7 @@ static size_t obbObbContacts(
 			
 			glm::vec3 vec = w + (sc * u) - (tc * v);
 			
-			if (glm::length(vec) < EPSILON) {
+			if (glm::length(vec) < 0.01) {
 				if (numContacts == 16) { break; }
 				
 				contacts[numContacts++] = a1 + (sc * (a2 - a1));
@@ -470,7 +466,7 @@ static size_t obbObbContacts(
 		for (size_t j = i + 1; j < numContacts; j++) {
 			glm::vec3 diff = glm::abs(contacts[j] - contacts[i]);
 			
-			if (diff.x < EPSILON && diff.y < EPSILON && diff.z < EPSILON) {
+			if (diff.x < 0.01 && diff.y < 0.01 && diff.z < 0.01) {
 				contacts[j--] = contacts[--numContacts];
 			}
 		}
