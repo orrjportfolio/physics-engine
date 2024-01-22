@@ -19,9 +19,9 @@ static inline glm::mat4
 
 struct DrawMesh3dCommand {
 	Mesh3d const *mesh;
+	glm::mat4 mat;
 	Tex const *tex;
 	glm::vec3 colour;
-	glm::mat4 mat;
 };
 
 static inline std::vector<DrawMesh3dCommand>
@@ -200,17 +200,15 @@ static void draw3d(int clientW, int clientH, float dt) {
 
 static void queueDrawMesh3d(
 	Mesh3d const *mesh,
+	glm::mat4 mat,
 	Tex const *tex,
-	glm::vec3 colour,
-	glm::vec3 pos,
-	glm::vec3 scale,
-	glm::mat3 rot
+	glm::vec3 colour
 ) {
 	drawMesh3dCommands.push_back(DrawMesh3dCommand{
 		.mesh = mesh,
+		.mat = mat,
 		.tex = tex,
-		.colour = colour,
-		.mat = glm::translate(pos) * glm::mat4(rot) * glm::scale(scale)
+		.colour = colour
 	});
 }
 

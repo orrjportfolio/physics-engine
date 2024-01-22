@@ -10,42 +10,29 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include "assets.hpp"
 #include "draw3d.hpp"
-#include "entity.hpp"
+#include "game.hpp"
 
 static inline SDL_Window *window;
 static inline SDL_GLContext glContext;
 
-static inline EntityId testEntity;
-
 static void appInit() {
 	loadAssets();
 	
-	testEntity = entityCreate(
-		glm::vec3(0.0f, 0.0f, -5.0f),
-		glm::vec3(1.0f),
-		glm::identity<glm::mat3>()
-	);
-	entityAddMesh(
-		testEntity,
-		&sphereMesh,
-		&smileTex,
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(0.0f)
-	);
+	gameInit();
 }
 
 static void appUpdate(float dt) {
 	int windowW, windowH;
 	SDL_GetWindowSize(window, &windowW, &windowH);
 	
-	static float time;
-	time += dt;
+	gameUpdate(dt);
 	
-	entityTransforms[testEntity.slot].rot = glm::rotate(time, glm::vec3(0.0f, 1.0f, 0.0f));
+	simulateEntityBodies(glm::vec3(0.0f, -9.8f, 0.0f), dt);
 	
 	queueDrawEntityMeshes();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, windowW, windowH);
 	
 	draw3d(windowW, windowH, dt);
 }

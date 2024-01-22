@@ -4,7 +4,6 @@ in layout(location=0) vec3 v_pos;
 in layout(location=1) vec3 v_norm;
 in layout(location=2) vec2 v_uv;
 
-out vec3 f_pos;
 out vec3 f_norm;
 out vec2 f_uv;
 
