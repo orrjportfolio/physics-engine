@@ -76,7 +76,7 @@ static void gameInit() {
 				glm::vec3(0.0f),
 				glm::vec3(radius * 2.0f),
 				&whiteTex,
-				glm::vec3(1.0f, 0.0f, 1.0f)
+				glm::vec3(0.6f, 0.8f, 0.7f)
 			);
 			entityAddAabbBody(
 				e,
@@ -88,7 +88,7 @@ static void gameInit() {
 		}
 	};
 	
-	srand(/*2*/2);
+	srand(/*0*/7);
 	for (int i = 0; i < 40; i++) {
 		int kind = rand() % 2;
 		glm::vec3 pos = glm::vec3(

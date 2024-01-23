@@ -13,10 +13,9 @@ uniform mat4
 	u_projMat;
 
 void main() {
-	mat4 modelViewMat = u_viewMat * u_modelMat;
-	mat4 normMat = transpose(inverse(modelViewMat));
+	mat4 normMat = transpose(inverse(u_modelMat));
 	
-	gl_Position = u_projMat * modelViewMat * vec4(v_pos, 1.0);
+	gl_Position = u_projMat * u_viewMat * u_modelMat * vec4(v_pos, 1.0);
 	
 	f_norm = (normMat * vec4(v_norm, 1.0)).xyz;
 	f_uv = v_uv;
