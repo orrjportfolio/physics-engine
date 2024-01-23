@@ -1,13 +1,10 @@
 #pragma once
 
-#include <iostream>
-
 #include <glm/gtx/orthonormalize.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/glm.hpp>
 
 #include "geom.hpp"
-#include "draw3d.hpp"
 
 enum BodyKind {
 	BODY_SPHERE,
@@ -227,7 +224,6 @@ static void bodySimulate(glm::vec3 *bodyPos, glm::mat3 *bodyRot, Body *body, glm
 		body->inertiaTensor = *bodyRot * body->initInertiaTensor * glm::transpose(*bodyRot);
 		
 		body->rotVel = glm::inverse(body->inertiaTensor) * body->rotMom;
-		//std::cout << body->rotVel.x << ", " << body->rotVel.y << ", " << body->rotVel.z << '\n';
 	}
 	
 	body->force = glm::vec3(0.0f);
@@ -306,7 +302,7 @@ static void bodyCollide(
 		*bPos -= overlap.norm * (overlap.depth / 2.0f);
 	}
 	
-	glm::vec3 contacts[4];
+	glm::vec3 contacts[8];
 	size_t numContacts;
 	if (a->kind == BODY_SPHERE) {
 		if (b->kind == BODY_SPHERE) {
@@ -357,13 +353,11 @@ static void bodyCollide(
 	glm::mat3 aInertiaTensorInv = (a->isStatic || a->kind == BODY_AABB)? glm::mat3(0.0f) : glm::inverse(a->inertiaTensor);
 	glm::mat3 bInertiaTensorInv = (b->isStatic || b->kind == BODY_AABB)? glm::mat3(0.0f) : glm::inverse(b->inertiaTensor);
 	
-	float impulseMags[4];
-	glm::vec3 impulses[4];
+	float impulseMags[8];
+	glm::vec3 impulses[8];
 		
 	for (size_t i = 0; i < numContacts; i++) {
 		glm::vec3 contact = contacts[i];
-		
-		//queueDrawDebugPoint(contact, glm::vec3(1.0f, 1.0f, 0.0f), true, 0.5f);
 		
 		glm::vec3 velA = a->isStatic? glm::vec3(0.0f) : a->vel;
 		glm::vec3 velB = b->isStatic? glm::vec3(0.0f) : b->vel;
@@ -394,21 +388,16 @@ static void bodyCollide(
 		glm::vec3 contact = contacts[i];
 		glm::vec3 impulse = impulses[i];
 		
-		//queueDrawDebugLine(contact, contact + impulse, glm::vec3(1.0f, 0.0f, 0.0f), true, 0.5f);
-		//queueDrawDebugLine(contact, contact - impulse, glm::vec3(0.0f, 1.0f, 0.0f), true, 0.5f);
-		
 		if (!a->isStatic) {
 			glm::vec3 ap = contact - *aPos;
 			a->vel += impulse / a->mass;
 			a->rotMom += glm::cross(ap, impulse);
-			//a->rotVel += aInertiaTensorInv * glm::cross(ap, impulse);
 		}
 		
 		if (!b->isStatic) {
 			glm::vec3 bp = contact - *bPos;
 			b->vel += -impulse / b->mass;
 			b->rotMom += glm::cross(bp, -impulse);
-			//b->rotVel += bInertiaTensorInv * glm::cross(bp, -impulse);
 		}
 	}
 	
@@ -418,7 +407,7 @@ static void bodyCollide(
 	float sf = a->sFriction + ((b->sFriction - a->sFriction) / 2.0f);
 	float df = a->dFriction + ((b->dFriction - a->dFriction) / 2.0f);
 	
-	glm::vec3 frictionImpulses[4];
+	glm::vec3 frictionImpulses[8];
 	
 	for (size_t i = 0; i < numContacts; i++) {
 		glm::vec3 contact = contacts[i];

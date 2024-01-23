@@ -462,7 +462,7 @@ static size_t obbObbContacts(
 		}
 	}
 	
-	for (size_t i = 0; i < glm::min(numContacts, (size_t)4); i++) {
+	for (size_t i = 0; i < glm::min(numContacts, (size_t)8); i++) {
 		for (size_t j = i + 1; j < numContacts; j++) {
 			glm::vec3 diff = glm::abs(contacts[j] - contacts[i]);
 			
@@ -474,7 +474,7 @@ static size_t obbObbContacts(
 		oContacts[i] = contacts[i];
 	}
 	
-	return glm::min(numContacts, (size_t)4);
+	return glm::min(numContacts, (size_t)8);
 }
 
 static size_t obbPlaneContacts(
