@@ -24,7 +24,7 @@ struct Body {
 	bool isStatic;
 	
 	float volume;
-	float mass, invMass;
+	float mass, massInv;
 	glm::mat3 initInertiaTensor;
 	float sFriction, dFriction;
 	float restitution;
@@ -32,7 +32,7 @@ struct Body {
 	glm::vec3 vel;
 	glm::vec3 rotMom;
 	
-	glm::mat3 inertiaTensor;
+	glm::mat3 inertiaTensor, inertiaTensorInv;
 	glm::vec3 rotVel;
 	
 	glm::vec3 force, torque;
@@ -48,6 +48,7 @@ static Body bodyCreateSphere(
 	float volume = (4.0f * (float)M_PI * (radius * radius * radius)) / 3.0f;
 	float mass = density * volume;
 	glm::mat3 initInertiaTensor = glm::mat3((2.0f * mass * (radius * radius)) / 5.0f);
+	glm::mat3 inertiaTensor = rot * initInertiaTensor * glm::transpose(rot);
 	
 	return Body{
 		.kind = BODY_SPHERE,
@@ -57,7 +58,7 @@ static Body bodyCreateSphere(
 		
 		.volume = volume,
 		.mass = mass,
-		.invMass = 1.0f / mass,
+		.massInv = 1.0f / mass,
 		.initInertiaTensor = initInertiaTensor,
 		.sFriction = sFriction,
 		.dFriction = dFriction,
@@ -66,7 +67,8 @@ static Body bodyCreateSphere(
 		.vel = glm::vec3(0.0f),
 		.rotMom = glm::vec3(0.0f),
 		
-		.inertiaTensor = rot * initInertiaTensor * glm::transpose(rot),
+		.inertiaTensor = inertiaTensor,
+		.inertiaTensorInv = glm::inverse(inertiaTensor),
 		.rotVel = glm::vec3(0.0f),
 		
 		.force = glm::vec3(0.0f),
@@ -91,16 +93,21 @@ static Body bodyCreateAabb(
 		
 		.volume = volume,
 		.mass = mass,
-		.invMass = 1.0f / mass,
+		.massInv = 1.0f / mass,
+		.initInertiaTensor = glm::mat3(0.0f),
 		.sFriction = sFriction,
 		.dFriction = dFriction,
 		.restitution = restitution,
 		
 		.vel = glm::vec3(0.0f),
+		.rotMom = glm::vec3(0.0f),
 		
+		.inertiaTensor = glm::mat3(0.0f),
+		.inertiaTensorInv = glm::mat3(0.0f),
 		.rotVel = glm::vec3(0.0f),
 		
 		.force = glm::vec3(0.0f),
+		.torque = glm::vec3(0.0f),
 	};
 }
 
@@ -118,6 +125,7 @@ static Body bodyCreateObb(
 		glm::vec3(0.0f, (mass * ((size.x * size.x) + (size.y * size.y))) / 12.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, (mass * ((size.x * size.x) + (size.z * size.z))) / 12.0f)
 	);
+	glm::mat3 inertiaTensor = rot * initInertiaTensor * glm::transpose(rot);
 	
 	return Body{
 		.kind = BODY_OBB,
@@ -127,7 +135,7 @@ static Body bodyCreateObb(
 		
 		.volume = volume,
 		.mass = mass,
-		.invMass = 1.0f / mass,
+		.massInv = 1.0f / mass,
 		.initInertiaTensor = initInertiaTensor,
 		.sFriction = sFriction,
 		.dFriction = dFriction,
@@ -136,7 +144,8 @@ static Body bodyCreateObb(
 		.vel = glm::vec3(0.0f),
 		.rotMom = glm::vec3(0.0f),
 		
-		.inertiaTensor = rot * initInertiaTensor * glm::transpose(rot),
+		.inertiaTensor = inertiaTensor,
+		.inertiaTensorInv = glm::inverse(inertiaTensor),
 		.rotVel = glm::vec3(0.0f),
 		
 		.force = glm::vec3(0.0f),
@@ -157,10 +166,18 @@ static Body bodyCreateStaticSphere(
 		.isStatic = true,
 		
 		.volume = (4.0f * (float)M_PI * (radius * radius * radius)) / 3.0f,
-		.invMass = 0.0f,
+		.massInv = 0.0f,
+		.initInertiaTensor = glm::mat3(0.0f),
 		.sFriction = sFriction,
 		.dFriction = dFriction,
-		.restitution = restitution
+		.restitution = restitution,
+		
+		.vel = glm::vec3(0.0f),
+		.rotMom = glm::vec3(0.0f),
+		
+		.inertiaTensor = glm::mat3(0.0f),
+		.inertiaTensorInv = glm::mat3(0.0f),
+		.rotVel = glm::vec3(0.0f)
 	};
 }
 
@@ -176,10 +193,17 @@ static Body bodyCreateStaticAabb(
 		.isStatic = true,
 		
 		.volume = size.x * size.y * size.z,
-		.invMass = 0.0f,
+		.massInv = 0.0f,
 		.sFriction = sFriction,
 		.dFriction = dFriction,
-		.restitution = restitution
+		.restitution = restitution,
+		
+		.vel = glm::vec3(0.0f),
+		.rotMom = glm::vec3(0.0f),
+		
+		.inertiaTensor = glm::mat3(0.0f),
+		.inertiaTensorInv = glm::mat3(0.0f),
+		.rotVel = glm::vec3(0.0f)
 	};
 }
 
@@ -195,10 +219,17 @@ static Body bodyCreateStaticObb(
 		.isStatic = true,
 		
 		.volume = size.x * size.y * size.z,
-		.invMass = 0.0f,
+		.massInv = 0.0f,
 		.sFriction = sFriction,
 		.dFriction = dFriction,
-		.restitution = restitution
+		.restitution = restitution,
+		
+		.vel = glm::vec3(0.0f),
+		.rotMom = glm::vec3(0.0f),
+		
+		.inertiaTensor = glm::mat3(0.0f),
+		.inertiaTensorInv = glm::mat3(0.0f),
+		.rotVel = glm::vec3(0.0f)
 	};
 }
 
@@ -222,8 +253,9 @@ static void bodySimulate(glm::vec3 *bodyPos, glm::mat3 *bodyRot, Body *body, glm
 		body->rotMom += body->torque * dt;
 		
 		body->inertiaTensor = *bodyRot * body->initInertiaTensor * glm::transpose(*bodyRot);
+		body->inertiaTensorInv = glm::inverse(body->inertiaTensor);
 		
-		body->rotVel = glm::inverse(body->inertiaTensor) * body->rotMom;
+		body->rotVel = body->inertiaTensorInv * body->rotMom;
 	}
 	
 	body->force = glm::vec3(0.0f);
@@ -350,19 +382,16 @@ static void bodyCollide(
 	glm::vec3 norm = overlap.norm;
 	float e = glm::min(a->restitution, b->restitution);
 	
-	glm::mat3 aInertiaTensorInv = (a->isStatic || a->kind == BODY_AABB)? glm::mat3(0.0f) : glm::inverse(a->inertiaTensor);
-	glm::mat3 bInertiaTensorInv = (b->isStatic || b->kind == BODY_AABB)? glm::mat3(0.0f) : glm::inverse(b->inertiaTensor);
-	
 	float impulseMags[8];
 	glm::vec3 impulses[8];
 		
 	for (size_t i = 0; i < numContacts; i++) {
 		glm::vec3 contact = contacts[i];
 		
-		glm::vec3 velA = a->isStatic? glm::vec3(0.0f) : a->vel;
-		glm::vec3 velB = b->isStatic? glm::vec3(0.0f) : b->vel;
-		glm::vec3 rotVelA = (a->isStatic || a->kind == BODY_AABB)? glm::vec3(0.0f) : a->rotVel;
-		glm::vec3 rotVelB = (b->isStatic || b->kind == BODY_AABB)? glm::vec3(0.0f) : b->rotVel;
+		glm::vec3 velA = a->vel;
+		glm::vec3 velB = b->vel;
+		glm::vec3 rotVelA = a->rotVel;
+		glm::vec3 rotVelB = b->rotVel;
 		glm::vec3 ap = contact - *aPos;
 		glm::vec3 bp = contact - *bPos;
 		velA += glm::cross(rotVelA, ap);
@@ -372,10 +401,10 @@ static void bodyCollide(
 		
 		float j =
 			glm::dot(-(1.0f + e) * velAB, norm) / (
-				glm::dot(norm, norm * (a->invMass + b->invMass)) +
+				glm::dot(norm, norm * (a->massInv + b->massInv)) +
 				glm::dot(norm,
-					glm::cross(aInertiaTensorInv * glm::cross(ap, norm), ap) +
-					glm::cross(bInertiaTensorInv * glm::cross(bp, norm), bp)
+					glm::cross(a->inertiaTensorInv * glm::cross(ap, norm), ap) +
+					glm::cross(b->inertiaTensorInv * glm::cross(bp, norm), bp)
 				)
 			);
 		j /= (float)numContacts;
@@ -401,8 +430,8 @@ static void bodyCollide(
 		}
 	}
 	
-	a->rotVel = glm::inverse(a->inertiaTensor) * a->rotMom;
-	b->rotVel = glm::inverse(b->inertiaTensor) * b->rotMom;
+	a->rotVel = a->inertiaTensorInv * a->rotMom;
+	b->rotVel = b->inertiaTensorInv * b->rotMom;
 	
 	float sf = a->sFriction + ((b->sFriction - a->sFriction) / 2.0f);
 	float df = a->dFriction + ((b->dFriction - a->dFriction) / 2.0f);
@@ -412,10 +441,10 @@ static void bodyCollide(
 	for (size_t i = 0; i < numContacts; i++) {
 		glm::vec3 contact = contacts[i];
 		
-		glm::vec3 velA = a->isStatic? glm::vec3(0.0f) : a->vel;
-		glm::vec3 velB = b->isStatic? glm::vec3(0.0f) : b->vel;
-		glm::vec3 rotVelA = (a->isStatic || a->kind == BODY_AABB)? glm::vec3(0.0f) : a->rotVel;
-		glm::vec3 rotVelB = (b->isStatic || b->kind == BODY_AABB)? glm::vec3(0.0f) : b->rotVel;
+		glm::vec3 velA = a->vel;
+		glm::vec3 velB = b->vel;
+		glm::vec3 rotVelA = a->rotVel;
+		glm::vec3 rotVelB = b->rotVel;
 		glm::vec3 ap = contact - *aPos;
 		glm::vec3 bp = contact - *bPos;
 		velA += glm::cross(rotVelA, ap);
@@ -431,10 +460,10 @@ static void bodyCollide(
 		
 		float jT =
 			glm::dot(-velAB, tan) / (
-				glm::dot(tan, tan * (a->invMass + b->invMass)) +
+				glm::dot(tan, tan * (a->massInv + b->massInv)) +
 				glm::dot(tan,
-					glm::cross(aInertiaTensorInv * glm::cross(ap, tan), ap) +
-					glm::cross(bInertiaTensorInv * glm::cross(bp, tan), bp)
+					glm::cross(a->inertiaTensorInv * glm::cross(ap, tan), ap) +
+					glm::cross(b->inertiaTensorInv * glm::cross(bp, tan), bp)
 				)
 			);
 		jT /= (float)numContacts;
@@ -465,6 +494,6 @@ static void bodyCollide(
 		}
 	}
 	
-	a->rotVel = glm::inverse(a->inertiaTensor) * a->rotMom;
-	b->rotVel = glm::inverse(b->inertiaTensor) * b->rotMom;
+	a->rotVel = a->inertiaTensorInv * a->rotMom;
+	b->rotVel = b->inertiaTensorInv * b->rotMom;
 }
