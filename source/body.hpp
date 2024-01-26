@@ -16,9 +16,7 @@ struct Body {
 	BodyKind kind;
 	union {
 		float radius;
-		struct {
-			glm::vec3 size;
-		};
+		glm::vec3 extents;
 	};
 	
 	bool isStatic;
@@ -87,7 +85,7 @@ static Body bodyCreateAabb(
 	
 	return Body{
 		.kind = BODY_AABB,
-		.size = size,
+		.extents = size / 2.0f,
 		
 		.isStatic = false,
 		
@@ -129,7 +127,7 @@ static Body bodyCreateObb(
 	
 	return Body{
 		.kind = BODY_OBB,
-		.size = size,
+		.extents = size / 2.0f,
 		
 		.isStatic = false,
 		
@@ -188,7 +186,7 @@ static Body bodyCreateStaticAabb(
 ) {
 	return Body{
 		.kind = BODY_AABB,
-		.size = size,
+		.extents = size / 2.0f,
 		
 		.isStatic = true,
 		
@@ -214,7 +212,7 @@ static Body bodyCreateStaticObb(
 ) {
 	return Body{
 		.kind = BODY_OBB,
-		.size = size,
+		.extents = size / 2.0f,
 		
 		.isStatic = true,
 		
@@ -231,6 +229,23 @@ static Body bodyCreateStaticObb(
 		.inertiaTensorInv = glm::mat3(0.0f),
 		.rotVel = glm::vec3(0.0f)
 	};
+}
+
+static void bodyBounds(glm::vec3 bodyPos, Body *body, glm::vec3 *oBoundsMin, glm::vec3 *oBoundsMax) {
+	if (body->kind == BODY_SPHERE) {
+		*oBoundsMin = bodyPos - body->radius;
+		*oBoundsMax = bodyPos + body->radius;
+	}
+	else if (body->kind == BODY_AABB) {
+		*oBoundsMin = bodyPos - body->extents;
+		*oBoundsMax = bodyPos + body->extents;
+	}
+	else if (body->kind == BODY_OBB) {
+		float radius = std::max({body->extents.x, body->extents.y, body->extents.z}) * (float)M_SQRT2;
+		
+		*oBoundsMin = bodyPos - radius;
+		*oBoundsMax = bodyPos + radius;
+	}
 }
 
 static void bodySimulate(glm::vec3 *bodyPos, glm::mat3 *bodyRot, Body *body, glm::vec3 gravity, float dt) {
@@ -262,11 +277,36 @@ static void bodySimulate(glm::vec3 *bodyPos, glm::mat3 *bodyRot, Body *body, glm
 	body->torque = glm::vec3(0.0f);
 }
 
-static void bodyCollide(
+struct BodyCollision {
+	bool occurred;
+	size_t numContacts;
+	glm::vec3 contacts[8];
+	glm::vec3 aVel;
+	glm::vec3 bVel;
+};
+
+static BodyCollision bodyCollide(
 	glm::vec3 *aPos, glm::mat3 *aRot, Body *a,
 	glm::vec3 *bPos, glm::mat3 *bRot, Body *b
 ) {
-	if (a->isStatic && b->isStatic) { return; }
+	if (a->isStatic && b->isStatic) {
+		return BodyCollision{.occurred = false};
+	}
+	
+	glm::vec3
+		aBoundsMin, aBoundsMax,
+		bBoundsMin, bBoundsMax;
+	
+	bodyBounds(*aPos, a, &aBoundsMin, &aBoundsMax);
+	bodyBounds(*bPos, b, &bBoundsMin, &bBoundsMax);
+	
+	if (
+		aBoundsMin.x > bBoundsMax.x || bBoundsMin.x > aBoundsMax.x ||
+		aBoundsMin.y > bBoundsMax.y || bBoundsMin.y > aBoundsMax.y ||
+		aBoundsMin.z > bBoundsMax.z || bBoundsMin.z > aBoundsMax.z
+	) {
+		return BodyCollision{.occurred = false};
+	}
 	
 	glm::mat3 aRotInv = glm::inverse(*aRot);
 	glm::mat3 bRotInv = glm::inverse(*bRot);
@@ -274,17 +314,17 @@ static void bodyCollide(
 	glm::vec3 aVerts[8], bVerts[8];
 	
 	if (a->kind == BODY_AABB) {
-		aabbVerts(*aPos + (a->size / 2.0f), *aPos - (a->size / 2.0f), aVerts);
+		aabbVerts(*aPos + a->extents, *aPos - a->extents, aVerts);
 	}
 	else if (a->kind == BODY_OBB) {
-		obbVerts(*aPos, a->size, *aRot, aVerts);
+		obbVerts(*aPos, a->extents, *aRot, aVerts);
 	}
 	
 	if (b->kind == BODY_AABB) {
-		aabbVerts(*bPos + (b->size / 2.0f), *bPos - (b->size / 2.0f), bVerts);
+		aabbVerts(*bPos + b->extents, *bPos - b->extents, bVerts);
 	}
 	else if (b->kind == BODY_OBB) {
-		obbVerts(*bPos, b->size, *bRot, bVerts);
+		obbVerts(*bPos, b->extents, *bRot, bVerts);
 	}
 	
 	Overlap overlap;
@@ -293,19 +333,19 @@ static void bodyCollide(
 			overlap = sphereSphereOverlap(*aPos, a->radius, *bPos, b->radius);
 		}
 		else if (b->kind == BODY_AABB) {
-			overlap = sphereAabbOverlap(*aPos, a->radius, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f));
+			overlap = sphereAabbOverlap(*aPos, a->radius, *bPos - b->extents, *bPos + b->extents);
 		}
 		else if (b->kind == BODY_OBB) {
-			overlap = sphereObbOverlap(*aPos, a->radius, *bPos, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f), bRot, &bRotInv);
+			overlap = sphereObbOverlap(*aPos, a->radius, *bPos, *bPos - b->extents, *bPos + b->extents, bRot, &bRotInv);
 		}
 	}
 	else if (a->kind == BODY_AABB) {
 		if (b->kind == BODY_SPHERE) {
-			overlap = sphereAabbOverlap(*bPos, b->radius, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f));
+			overlap = sphereAabbOverlap(*bPos, b->radius, *aPos - a->extents, *aPos + a->extents);
 			overlap.norm = -overlap.norm;
 		}
 		else if (b->kind == BODY_AABB) {
-			overlap = aabbAabbOverlap(*aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f));
+			overlap = aabbAabbOverlap(*aPos - a->extents, *aPos + a->extents, *bPos - b->extents, *bPos + b->extents);
 		}
 		else if (b->kind == BODY_OBB) {
 			overlap = obbObbOverlap(*aPos, aVerts, *bPos, bVerts);
@@ -313,7 +353,7 @@ static void bodyCollide(
 	}
 	else if (a->kind == BODY_OBB) {
 		if (b->kind == BODY_SPHERE) {
-			overlap = sphereObbOverlap(*bPos, b->radius, *aPos, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), aRot, &aRotInv);
+			overlap = sphereObbOverlap(*bPos, b->radius, *aPos, *aPos - a->extents, *aPos + a->extents, aRot, &aRotInv);
 			overlap.norm = -overlap.norm;
 		}
 		else if (b->kind == BODY_AABB || b->kind == BODY_OBB) {
@@ -321,7 +361,9 @@ static void bodyCollide(
 		}
 	}
 	
-	if (!overlap.exists) { return; }
+	if (!overlap.exists) {
+		return BodyCollision{.occurred = false};
+	}
 	
 	if (a->isStatic) {
 		*bPos -= overlap.norm * overlap.depth;
@@ -341,46 +383,46 @@ static void bodyCollide(
 			contacts[0] = sphereSphereContact(*aPos, a->radius, *bPos, b->radius);
 		}
 		else if (b->kind == BODY_AABB) {
-			contacts[0] = sphereAabbContact(*aPos, a->radius, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f));
+			contacts[0] = sphereAabbContact(*aPos, a->radius, *bPos - b->extents, *bPos + b->extents);
 		}
 		else if (b->kind == BODY_OBB) {
-			contacts[0] = sphereObbContact(*aPos, a->radius, *bPos, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f), bRot, &bRotInv);
+			contacts[0] = sphereObbContact(*aPos, a->radius, *bPos, *bPos - b->extents, *bPos + b->extents, bRot, &bRotInv);
 		}
 		numContacts = 1;
 	}
 	else if (a->kind == BODY_AABB) {
 		if (b->kind == BODY_SPHERE) {
-			contacts[0] = sphereAabbContact(*bPos, b->radius, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f));
+			contacts[0] = sphereAabbContact(*bPos, b->radius, *aPos - a->extents, *aPos + a->extents);
 			numContacts = 1;
 		}
 		else if (b->kind == BODY_AABB) {
-			aabbAabbContacts(*aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f), contacts);
+			aabbAabbContacts(*aPos - a->extents, *aPos + a->extents, *bPos - b->extents, *bPos + b->extents, contacts);
 			numContacts = 4;
 		}
 		else if (b->kind == BODY_OBB) {
 			numContacts = obbObbContacts(
-				*aPos, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), &aRotInv, aVerts,
-				*bPos, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f), &bRotInv, bVerts,
+				*aPos, *aPos - a->extents, *aPos + a->extents, &aRotInv, aVerts,
+				*bPos, *bPos - b->extents, *bPos + b->extents, &bRotInv, bVerts,
 				contacts
 			);
 		}
 	}
 	else if (a->kind == BODY_OBB) {
 		if (b->kind == BODY_SPHERE) {
-			contacts[0] = sphereObbContact(*bPos, b->radius, *aPos, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), aRot, &aRotInv);
+			contacts[0] = sphereObbContact(*bPos, b->radius, *aPos, *aPos - a->extents, *aPos + a->extents, aRot, &aRotInv);
 			numContacts = 1;
 		}
 		else if (b->kind == BODY_AABB || b->kind == BODY_OBB) {
 			numContacts = obbObbContacts(
-				*aPos, *aPos - (a->size / 2.0f), *aPos + (a->size / 2.0f), &aRotInv, aVerts,
-				*bPos, *bPos - (b->size / 2.0f), *bPos + (b->size / 2.0f), &bRotInv, bVerts,
+				*aPos, *aPos - a->extents, *aPos + a->extents, &aRotInv, aVerts,
+				*bPos, *bPos - b->extents, *bPos + b->extents, &bRotInv, bVerts,
 				contacts
 			);
 		}
 	}
 	
 	glm::vec3 norm = overlap.norm;
-	float e = glm::min(a->restitution, b->restitution);
+	float e = glm::max(a->restitution, b->restitution);
 	
 	float impulseMags[8];
 	glm::vec3 impulses[8];
@@ -496,4 +538,15 @@ static void bodyCollide(
 	
 	a->rotVel = a->inertiaTensorInv * a->rotMom;
 	b->rotVel = b->inertiaTensorInv * b->rotMom;
+	
+	BodyCollision collision = BodyCollision{
+		.occurred = true,
+		.numContacts = numContacts,
+		.aVel = a->vel,
+		.bVel = b->vel
+	};
+	
+	memcpy(collision.contacts, contacts, sizeof(contacts));
+	
+	return collision;
 }

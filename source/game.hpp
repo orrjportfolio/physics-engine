@@ -57,13 +57,13 @@ static void gameInit() {
 				e,
 				&cubeMesh,
 				glm::vec3(0.0f),
-				glm::vec3(radius * 2.0f),
+				glm::vec3(radius, radius, radius * 2.0f),
 				&whiteTex,
 				glm::vec3(1.0f, 1.0f, 1.0f)
 			);
 			entityAddObbBody(
 				e,
-				glm::vec3(radius * 2.0f),
+				glm::vec3(radius, radius, radius * 2.0f),
 				1.0f,
 				0.5f, 0.4f,
 				0.25f
@@ -74,13 +74,13 @@ static void gameInit() {
 				e,
 				&cubeMesh,
 				glm::vec3(0.0f),
-				glm::vec3(radius * 2.0f),
+				glm::vec3(radius, radius, radius * 2.0f),
 				&whiteTex,
 				glm::vec3(0.6f, 0.8f, 0.7f)
 			);
 			entityAddAabbBody(
 				e,
-				glm::vec3(radius * 2.0f),
+				glm::vec3(radius, radius, radius * 2.0f),
 				1.0f,
 				0.5f, 0.4f,
 				0.25f
@@ -88,7 +88,7 @@ static void gameInit() {
 		}
 	};
 	
-	srand(/*0*/7);
+	srand(/*0*/6);
 	for (int i = 0; i < 40; i++) {
 		int kind = rand() % 2;
 		glm::vec3 pos = glm::vec3(
@@ -102,6 +102,41 @@ static void gameInit() {
 	/*addSphere(0, glm::vec3(-2.0f, 5.0f, 0.0f), 1.0f);
 	addSphere(0, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f);
 	addSphere(1, glm::vec3(2.0f, 5.0f, 0.0f), 1.0f);*/
+	
+	EntityId player = entityCreate(glm::vec3(0.0f, 2.0f, 0.0f), glm::identity<glm::mat3>());
+	entityAddCallbacks(player, EntityCallbacks{
+		.onUpdate = [](EntityId e) {
+			Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
+			
+			if (keysHeld[SDL_SCANCODE_A]) {
+				entityBodies[e.slot].force += glm::vec3(-3.0f, 0.0f, 0.0f);
+			}
+			if (keysHeld[SDL_SCANCODE_D]) {
+				entityBodies[e.slot].force += glm::vec3(3.0f, 0.0f, 0.0f);
+			}
+			if (keysHeld[SDL_SCANCODE_W]) {
+				entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, -3.0f);
+			}
+			if (keysHeld[SDL_SCANCODE_S]) {
+				entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, 3.0f);
+			}
+		}
+	});
+	entityAddMesh(
+		player,
+		&sphereMesh,
+		glm::vec3(0.0f),
+		glm::vec3(0.5f),
+		&whiteTex,
+		glm::vec3(1.0f, 0.0f, 0.0f)
+	);
+	entityAddSphereBody(
+		player,
+		0.5f,
+		4.0f,
+		0.5f, 0.4f,
+		0.5f
+	);
 	
 }
 

@@ -248,6 +248,7 @@ static void queueDrawDebugSphere(glm::vec3 pos, float radius, glm::mat3 rot, glm
 static void queueDrawDebugCube(glm::vec3 pos, glm::vec3 size, glm::mat3 rot, glm::vec3 colour, bool shouldDrawOnTop, float duration) {
 	drawDebug3dCommands.push_back(DrawDebug3dCommand{
 		.kind = DRAW_DEBUG_3D_COMMAND_CUBE,
+		.pos = pos,
 		.size = size,
 		.rot = rot,
 		.colour = colour,

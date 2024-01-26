@@ -1,5 +1,6 @@
 
 #include <cassert>
+#include <chrono>
 #include <iostream>
 
 #include <GL/gl3w.h>
@@ -9,6 +10,7 @@
 #include "imgui/imgui_impl_sdl2.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "assets.hpp"
+#include "debugui.hpp"
 #include "draw3d.hpp"
 #include "game.hpp"
 
@@ -18,6 +20,7 @@ static inline SDL_GLContext glContext;
 static void appInit() {
 	loadAssets();
 	
+	debuguiInit();
 	gameInit();
 }
 
@@ -25,19 +28,27 @@ static void appUpdate(float dt) {
 	int windowW, windowH;
 	SDL_GetWindowSize(window, &windowW, &windowH);
 	
+	debuguiUpdate(dt);
 	gameUpdate(dt);
+	
+	updateEntities();
 	
 	Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
 	static bool prevSpaceHeld = false;
 	bool spaceHeld = keysHeld[SDL_SCANCODE_SPACE];
 	if (spaceHeld/* && !prevSpaceHeld*/) {
-	//for (int i = 0; i < 10; i++) {
-		simulateEntityBodies(glm::vec3(0.0f, -9.8f, 0.0f), (1.0f / 60.0f) * 1.0f);
-	//}
+		auto start = std::chrono::steady_clock::now();
+		for (int i = 0; i < 2; i++) {
+			simulateEntityBodies(glm::vec3(0.0f, -9.8f, 0.0f), (1.0f / 60.0f) * 0.5f);
+		}
+		auto end = std::chrono::steady_clock::now();
+		std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0f << " ms\n";
 	}
 	prevSpaceHeld = spaceHeld;
 	
 	queueDrawEntityMeshes();
+	
+	//queueDrawEntityBodyOutlines();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, windowW, windowH);

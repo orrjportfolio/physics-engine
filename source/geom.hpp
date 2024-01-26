@@ -19,17 +19,15 @@ static void aabbVerts(glm::vec3 minPos, glm::vec3 maxPos, glm::vec3 *oVerts) {
 	oVerts[7] = glm::vec3(minPos.x, maxPos.y, maxPos.z);
 }
 
-static void obbVerts(glm::vec3 pos, glm::vec3 size, glm::mat3 rot, glm::vec3 *oVerts) {
-	glm::vec3 halfSize = size / 2.0f;
-	
-	oVerts[0] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, -halfSize.z));
-	oVerts[1] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, -halfSize.z));
-	oVerts[2] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, -halfSize.z));
-	oVerts[3] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, -halfSize.z));
-	oVerts[4] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, halfSize.z));
-	oVerts[5] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, halfSize.z));
-	oVerts[6] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, halfSize.z));
-	oVerts[7] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, halfSize.z));
+static void obbVerts(glm::vec3 pos, glm::vec3 extents, glm::mat3 rot, glm::vec3 *oVerts) {
+	oVerts[0] = pos + (rot * glm::vec3(-extents.x, -extents.y, -extents.z));
+	oVerts[1] = pos + (rot * glm::vec3(extents.x, -extents.y, -extents.z));
+	oVerts[2] = pos + (rot * glm::vec3(extents.x, extents.y, -extents.z));
+	oVerts[3] = pos + (rot * glm::vec3(-extents.x, extents.y, -extents.z));
+	oVerts[4] = pos + (rot * glm::vec3(-extents.x, -extents.y, extents.z));
+	oVerts[5] = pos + (rot * glm::vec3(extents.x, -extents.y, extents.z));
+	oVerts[6] = pos + (rot * glm::vec3(extents.x, extents.y, extents.z));
+	oVerts[7] = pos + (rot * glm::vec3(-extents.x, extents.y, extents.z));
 }
 
 struct Overlap {
