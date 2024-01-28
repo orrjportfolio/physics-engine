@@ -38,7 +38,7 @@ struct EntityId {
 };
 
 struct EntityCallbacks {
-	void (*onUpdate)(EntityId entity) =
+	void (*onUpdate)(EntityId entity, float dt) =
 		nullptr;
 	void (*onCollide)(EntityId entity, glm::vec3 entityVel, uint8_t otherEntity, glm::vec3 otherEntityVel, size_t numContacts, glm::vec3 const *contacts) =
 		nullptr;
@@ -47,13 +47,13 @@ struct EntityCallbacks {
 static EntityCallbacks
 	entityCallbacks[CAP_ENTITY_SLOTS];
 
-static void updateEntities() {
+static void updateEntities(float dt) {
 	for (size_t i = 0; i < (size_t)numEntitySlots; i++) {
 		if (entityCallbacks[i].onUpdate != nullptr) {
 			entityCallbacks[i].onUpdate(EntityId{
 				.slot = (uint8_t)i,
 				.gen = entitySlots[i].gen
-			});
+			}, dt);
 		}
 	}
 }
@@ -365,4 +365,37 @@ static void entityAddMesh(
 		.tex = tex,
 		.colour = colour
 	};
+}
+
+static glm::vec3 entityPos(EntityId entity) {
+	return entityTransforms[entity.slot].pos;
+}
+
+static void entitySetPos(EntityId entity, glm::vec3 pos) {
+	entityTransforms[entity.slot].pos = pos;
+}
+
+static glm::mat3 entityRot(EntityId entity) {
+	return entityTransforms[entity.slot].rot;
+}
+
+static void entitySetRot(EntityId entity, glm::mat3 rot) {
+	entityTransforms[entity.slot].rot = rot;
+}
+
+static glm::vec3 entityVel(EntityId entity) {
+	return entityBodies[entity.slot].vel;
+}
+
+static void entitySetVel(EntityId entity, glm::vec3 vel) {
+	entityBodies[entity.slot].vel = vel;
+}
+
+static void entityAddForceAt(EntityId entity, glm::vec3 force, glm::vec3 relPos) {
+	entityBodies[entity.slot].force += force;
+	entityBodies[entity.slot].torque += glm::cross(relPos, force);
+}
+
+static void entityAddForce(EntityId entity, glm::vec3 force) {
+	entityAddForceAt(entity, force, glm::vec3(0.0f));
 }

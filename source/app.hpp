@@ -31,7 +31,7 @@ static void appUpdate(float dt) {
 	debuguiUpdate(dt);
 	gameUpdate(dt);
 	
-	updateEntities();
+	updateEntities(dt);
 	
 	Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
 	static bool prevSpaceHeld = false;

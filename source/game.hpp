@@ -105,20 +105,26 @@ static void gameInit() {
 	
 	EntityId player = entityCreate(glm::vec3(0.0f, 2.0f, 0.0f), glm::identity<glm::mat3>());
 	entityAddCallbacks(player, EntityCallbacks{
-		.onUpdate = [](EntityId e) {
+		.onUpdate = [](EntityId e, float dt) {
 			Uint8 const *keysHeld = SDL_GetKeyboardState(nullptr);
 			
-			if (keysHeld[SDL_SCANCODE_A]) {
-				entityBodies[e.slot].force += glm::vec3(-3.0f, 0.0f, 0.0f);
-			}
-			if (keysHeld[SDL_SCANCODE_D]) {
-				entityBodies[e.slot].force += glm::vec3(3.0f, 0.0f, 0.0f);
-			}
-			if (keysHeld[SDL_SCANCODE_W]) {
-				entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, -3.0f);
-			}
-			if (keysHeld[SDL_SCANCODE_S]) {
-				entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, 3.0f);
+			if (keysHeld[SDL_SCANCODE_SPACE]) {
+				if (keysHeld[SDL_SCANCODE_A]) {
+					//entityBodies[e.slot].force += glm::vec3(-3.0f, 0.0f, 0.0f);
+					entityAddForce(e, glm::vec3(-6.0f, 0.0f, 0.0f));
+				}
+				if (keysHeld[SDL_SCANCODE_D]) {
+					//entityBodies[e.slot].force += glm::vec3(3.0f, 0.0f, 0.0f);
+					entityAddForce(e, glm::vec3(6.0f, 0.0f, 0.0f));
+				}
+				if (keysHeld[SDL_SCANCODE_W]) {
+					//entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, -3.0f);
+					entityAddForce(e, glm::vec3(0.0f, 0.0f, -6.0f));
+				}
+				if (keysHeld[SDL_SCANCODE_S]) {
+					//entityBodies[e.slot].force += glm::vec3(0.0f, 0.0f, 3.0f);
+					entityAddForce(e, glm::vec3(0.0f, 0.0f, 6.0f));
+				}
 			}
 		}
 	});
