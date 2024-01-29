@@ -1,10 +1,10 @@
 
 #include <SDL2/SDL.h>
 
-#include "app.hpp"
+#include "game/app.hpp"
 
 int main(int argc, char **argv) {
-	appRun();
+	App::run();
 	
 	return 0;
 }
