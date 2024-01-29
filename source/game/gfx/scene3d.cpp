@@ -1,32 +1,54 @@
 #include "scene3d.hpp"
 
-#include <glm/gtx/transform.hpp>
-#include <glm/glm.hpp>
+#include <vector>
+
 #include <SDL2/SDL.h>
 
 namespace Scene3d {
+	struct LitProgram : public Program {
+		GLint
+			uModelMat,
+			uViewMat,
+			uProjMat,
+			uTex,
+			uColour;
+	};
+	
+	struct Object {
+		Mesh3d const *mesh;
+		Material const *material;
+		glm::mat4 mat;
+	};
+	
 	Cam cam;
 	
 	static Shader
 		litVertShader,
 		litFragShader;
 	
-	static Program
+	static LitProgram
 		litProgram;
 	
-	static Mesh3d
-		cubeMesh;
+	static Tex
+		whiteTex;
+	
+	static std::vector<Object>
+		objects;
 	
 	void init() {
 		litVertShader = Shader::load("assets/shaders/lit.vert.glsl", GL_VERTEX_SHADER);
 		litFragShader = Shader::load("assets/shaders/lit.frag.glsl", GL_FRAGMENT_SHADER);
 		
-		Shader const *litProgramShaders[] = {&litVertShader, &litFragShader};
-		litProgram = Program::create(litProgramShaders);
+		Shader const *litShaders[] = {&litVertShader, &litFragShader};
+		litProgram = (LitProgram)Program::create(litShaders);
+		litProgram.uModelMat = litProgram.uniform("u_modelMat");
+		litProgram.uViewMat = litProgram.uniform("u_viewMat");
+		litProgram.uProjMat = litProgram.uniform("u_projMat");
+		litProgram.uTex = litProgram.uniform("u_tex");
+		litProgram.uColour = litProgram.uniform("u_colour");
 		
-		cubeMesh = Mesh3d::load("assets/models/sphere.obj");
-		
-		cam.pos = glm::vec3(0.0f, 0.0f, 3.0f);
+		auto white = glm::u8vec4(255, 255, 255, 255);
+		whiteTex = Tex::create(&white, 1, 1, false, (Tex::FlagMask)0);
 	}
 	
 	void draw(int clientW, int clientH) {
@@ -66,34 +88,47 @@ namespace Scene3d {
 		
 		glViewport(0, 0, clientW, clientH);
 		
-		auto time = SDL_GetTicks() / 1000.0f;
-		
-		auto modelMat =
-			glm::rotate(time, glm::vec3(1.0f, 1.0f, 1.0f));
-		auto viewMat =
-			glm::rotate(cam.pitch, glm::vec3(1.0f, 0.0f, 0.0f)) *
-			glm::rotate(cam.yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::translate(-cam.pos);
-		auto projMat =
-			glm::perspective(glm::radians(70.0f), clientW / (float)clientH, 0.03f, 300.0f);
-		
-		auto
-			uModelMat = litProgram.uniform("u_modelMat"),
-			uViewMat = litProgram.uniform("u_viewMat"),
-			uProjMat = litProgram.uniform("u_projMat");
-		
-		glUseProgram(litProgram.handle);
-		
-		glUniformMatrix4fv(uModelMat, 1, GL_FALSE, &modelMat[0][0]);
-		glUniformMatrix4fv(uViewMat, 1, GL_FALSE, &viewMat[0][0]);
-		glUniformMatrix4fv(uProjMat, 1, GL_FALSE, &projMat[0][0]);
-		
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		
-		cubeMesh.draw();
+		glActiveTexture(GL_TEXTURE0);
+		
+		glUseProgram(litProgram.handle);
+		
+		auto
+			viewMat = cam.viewMat(),
+			projMat = cam.projMat(clientW / (float)clientH);
+		
+		glUniformMatrix4fv(litProgram.uViewMat, 1, GL_FALSE, &viewMat[0][0]);
+		glUniformMatrix4fv(litProgram.uProjMat, 1, GL_FALSE, &projMat[0][0]);
+		glUniform1i(litProgram.uTex, 0);
+		
+		for (auto o : objects) {
+			auto mKind = o.material->kind;
+			if (mKind == Material::KIND_LIT) {
+				glBindTexture(GL_TEXTURE_2D, o.material->tex->handle);
+			}
+			else if (mKind == Material::KIND_LIT_UNTEXED) {
+				glBindTexture(GL_TEXTURE_2D, whiteTex.handle);
+			}
+			
+			glUniformMatrix4fv(litProgram.uModelMat, 1, GL_FALSE, &o.mat[0][0]);
+			glUniform3fv(litProgram.uColour, 1, &o.material->colour[0]);
+			
+			o.mesh->draw();
+		}
 		
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
+		
+		objects.clear();
+	}
+	
+	void addObject(Mesh3d const *mesh, Material const *material, glm::mat4 mat) {
+		objects.push_back(Object{
+			.mesh = mesh,
+			.material = material,
+			.mat = mat
+		});
 	}
 };

@@ -11,6 +11,9 @@
 #include "imgui/imgui_impl_sdl2.h"
 
 namespace App {
+	static Mesh3d sphere;
+	static Tex testTex;
+	
 	void run() {
 		auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 		assert(sdlInitResult == 0);
@@ -42,6 +45,9 @@ namespace App {
 		ImGui_ImplSDL2_InitForOpenGL(window, glContext);
 		ImGui_ImplOpenGL3_Init();
 		
+		sphere = Mesh3d::load("assets/models/sphere.obj");
+		testTex = Tex::load("assets/textures/smile.png", Tex::FLAG_FILTER);
+		
 		Scene3d::init();
 		
 		SDL_ShowWindow(window);
@@ -64,6 +70,14 @@ namespace App {
 			
 			int windowW, windowH;
 			SDL_GetWindowSize(window, &windowW, &windowH);
+			
+			static auto material = Material{
+				.kind = Material::KIND_LIT,
+				.tex = &testTex,
+				.colour = glm::vec3(1.0f, 1.0f, 1.0f)
+			};
+			
+			Scene3d::addObject(&sphere, &material, glm::identity<glm::mat4>());
 			
 			Scene3d::draw(windowW, windowH);
 			

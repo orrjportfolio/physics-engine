@@ -22,7 +22,7 @@ struct Program {
 	
 	static Program create(std::span<Shader const*> shaders);
 	
-	GLint uniform(char const *name) {
+	GLint uniform(char const *name) const {
 		return glGetUniformLocation(handle, name);
 	}
 };
@@ -37,6 +37,8 @@ struct Tex {
 	int w, h;
 	
 	static Tex create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags);
+	
+	static Tex load(char const *path, FlagMask flags);
 };
 
 struct Mesh {
@@ -59,7 +61,7 @@ struct Mesh3d : public Mesh {
 	
 	static Mesh3d load(char const *path);
 	
-	void draw() {
+	void draw() const {
 		glBindVertexArray(array);
 		
 		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, (void*)0);

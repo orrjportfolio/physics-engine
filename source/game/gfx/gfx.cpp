@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "stb/stb_image.h"
+
 Shader Shader::create(char const *source, GLenum kind) {
 	auto handle = glCreateShader(kind);
 	
@@ -82,9 +84,9 @@ Tex Tex::create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags
 		(flags & FLAG_FILTER)?
 			(flags & FLAG_MIPMAP)?
 				GL_LINEAR_MIPMAP_LINEAR :
-				GL_NEAREST_MIPMAP_LINEAR :
-			(flags & FLAG_MIPMAP)?
 				GL_LINEAR :
+			(flags & FLAG_MIPMAP)?
+				GL_NEAREST_MIPMAP_NEAREST :
 				GL_NEAREST
 	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
@@ -110,6 +112,18 @@ Tex Tex::create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags
 		.handle = handle,
 		.w = w, .h = h
 	};
+}
+
+Tex Tex::load(char const *path, FlagMask flags) {
+	int w, h, c;
+	auto data = stbi_load(path, &w, &h, &c, 4);
+	auto alpha = (c % 2) == 0;
+	
+	auto r = Tex::create(data, w, h, alpha, flags);
+	
+	stbi_image_free(data);
+	
+	return r;
 }
 
 Mesh3d Mesh3d::create(

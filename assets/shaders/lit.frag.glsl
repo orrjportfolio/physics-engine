@@ -6,8 +6,11 @@ in vec2 f_uv;
 
 out vec3 o_colour;
 
+uniform sampler2D u_tex;
+uniform vec3 u_colour;
+
 void main() {
-	vec3 albedo = vec3(1.0, 1.0/3.0, 2.0/3.0);
+	vec3 albedo = texture2D(u_tex, f_uv).rgb;
 	
-	o_colour = f_light * albedo;
+	o_colour = f_light * albedo * u_colour;
 }
