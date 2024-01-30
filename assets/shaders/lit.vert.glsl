@@ -1,8 +1,8 @@
 #version 460 core
 
-in vec3 v_pos;
-in vec3 v_norm;
-in vec2 v_uv;
+in layout(location=0) vec3 v_pos;
+in layout(location=1) vec3 v_norm;
+in layout(location=2) vec2 v_uv;
 
 out vec3 f_pos;
 out vec3 f_light;

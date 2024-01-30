@@ -250,3 +250,96 @@ Mesh3d Mesh3d::load(char const *path) {
 	
 	return Mesh3d::create(verts, idxs);
 }
+
+MeshDebug MeshDebug::create(
+	std::span<glm::vec3 const> verts,
+	std::span<uint16_t const> idxs
+) {
+	GLuint array;
+	glGenVertexArrays(1, &array);
+	
+	GLuint bufs[3];
+	glGenBuffers(3, bufs);
+	auto
+		vertBuf = bufs[0],
+		idxBuf = bufs[1],
+		instanceBuf = bufs[2];
+	
+	glBindVertexArray(array);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, vertBuf);
+	glBufferData(GL_ARRAY_BUFFER, verts.size_bytes(), verts.data(), GL_STATIC_DRAW);
+	
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idxBuf);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxs.size_bytes(), idxs.data(), GL_STATIC_DRAW);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuf);
+	
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
+	
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Instance), (void*)offsetof(Instance, colour));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Instance), (void*)offsetof(Instance, mat));
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Instance), (void*)(offsetof(Instance, mat) + sizeof(glm::vec4)));
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Instance), (void*)(offsetof(Instance, mat) + (2 * sizeof(glm::vec4))));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Instance), (void*)(offsetof(Instance, mat) + (3 * sizeof(glm::vec4))));
+	
+	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
+	
+	auto r = (MeshDebug)Mesh{
+		.array = array,
+		.vertBuf = vertBuf, .idxBuf = idxBuf,
+		.numIndices = idxs.size(),
+	};
+	r.instanceBuf = instanceBuf;
+	r.numInstances = 0;
+	return r;
+}
+
+MeshDebug MeshDebug::load(char const *path) {
+	auto s = Util::loadStr(path, nullptr);
+	
+	std::vector<glm::vec3>
+		verts;
+	std::vector<uint16_t>
+		idxs;
+	
+	auto it = s;
+	while (*it != '\0') {
+		if (*it == 'v') {
+			it++;
+			
+			glm::vec3 vert;
+			vert.x = strtod(it, &it);
+			vert.y = strtod(it, &it);
+			vert.z = strtod(it, &it);
+			
+			verts.push_back(vert);
+		}
+		else if (*it == 'l') {
+			it++;
+			
+			for (int i = 0; i < 2; i++) {
+				auto idx = (uint16_t)(strtoul(it, &it, 10) - 1);
+				
+				idxs.push_back(idx);
+			}
+		}
+		
+		while (*it++ != '\n') { }
+	}
+	
+	free(s);
+	
+	return MeshDebug::create(verts, idxs);
+}

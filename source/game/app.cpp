@@ -1,6 +1,8 @@
 #include "app.hpp"
 
 #include <cassert>
+#include <chrono>
+#include <iostream>
 
 #include <GL/gl3w.h>
 #include <SDL2/SDL.h>
@@ -9,16 +11,35 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_sdl2.h"
+#include "game.hpp"
 
 namespace App {
-	static Mesh3d sphere;
-	static Tex testTex;
+	static SDL_Window *window;
+	
+	static void init() {
+		Scene3d::init();
+		Game::init();
+	}
+	
+	static void update(float dt) {
+		Game::update(dt);
+		
+		int windowW, windowH;
+		SDL_GetWindowSize(window, &windowW, &windowH);
+		
+		auto start = std::chrono::steady_clock::now();
+		
+		Scene3d::draw(windowW, windowH, dt);
+		
+		auto end = std::chrono::steady_clock::now();
+		std::cout << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0) << " ms\n";
+	}
 	
 	void run() {
 		auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 		assert(sdlInitResult == 0);
 		
-		auto window = SDL_CreateWindow(
+		window = SDL_CreateWindow(
 			"",
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			1280, 720,
@@ -45,10 +66,7 @@ namespace App {
 		ImGui_ImplSDL2_InitForOpenGL(window, glContext);
 		ImGui_ImplOpenGL3_Init();
 		
-		sphere = Mesh3d::load("assets/models/sphere.obj");
-		testTex = Tex::load("assets/textures/smile.png", Tex::FLAG_FILTER);
-		
-		Scene3d::init();
+		init();
 		
 		SDL_ShowWindow(window);
 		
@@ -68,18 +86,7 @@ namespace App {
 			ImGui_ImplSDL2_NewFrame();
 			ImGui::NewFrame();
 			
-			int windowW, windowH;
-			SDL_GetWindowSize(window, &windowW, &windowH);
-			
-			static auto material = Material{
-				.kind = Material::KIND_LIT,
-				.tex = &testTex,
-				.colour = glm::vec3(1.0f, 1.0f, 1.0f)
-			};
-			
-			Scene3d::addObject(&sphere, &material, glm::identity<glm::mat4>());
-			
-			Scene3d::draw(windowW, windowH);
+			update(1.0f / 60.0f);
 			
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

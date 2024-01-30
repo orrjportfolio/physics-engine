@@ -67,3 +67,37 @@ struct Mesh3d : public Mesh {
 		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, (void*)0);
 	}
 };
+
+struct MeshDebug : public Mesh {
+	struct Instance {
+		glm::vec3 colour;
+		glm::mat4 mat;
+	};
+	
+	GLuint instanceBuf;
+	
+	size_t numInstances;
+	
+	static MeshDebug create(
+		std::span<glm::vec3 const> verts,
+		std::span<uint16_t const> idxs
+	);
+	
+	static MeshDebug load(char const *path);
+	
+	void draw(std::span<Instance const> instances) {
+		glBindVertexArray(array);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, instanceBuf);
+		if (instances.size() > numInstances) {
+			glBufferData(GL_ARRAY_BUFFER, instances.size_bytes(), instances.data(), GL_DYNAMIC_DRAW);
+			
+			numInstances = instances.size();
+		}
+		else {
+			glBufferSubData(GL_ARRAY_BUFFER, 0, instances.size_bytes(), instances.data());
+		}
+		
+		glDrawElementsInstanced(GL_LINES, numIndices, GL_UNSIGNED_SHORT, (void*)0, instances.size());
+	}
+};
