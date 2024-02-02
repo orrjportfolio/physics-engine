@@ -64,45 +64,5 @@ namespace Game {
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 		}
 		
-		static float time = 0.0f;
-		time += dt;
-		
-		auto rot = glm::rotate(time, glm::vec3(0.5f, 1.0f, 0.5f));
-		
-		Scene3d::addObject(&cubeMesh, &white, glm::mat4(rot));
-		
-		for (int i = 0; i < 2000; i++) {
-			Scene3d::addDebugCube(
-				poses[i],
-				glm::vec3(1.0f),
-				rot,
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				false,
-				0.0f
-			);
-			
-			Scene3d::addDebugPoint(
-				poses[i],
-				glm::vec3(1.0f, 1.0f, 0.0f),
-				true,
-				0.0f
-			);
-			
-			Scene3d::addDebugLine(
-				glm::vec3(0.0f), poses[i],
-				glm::vec3(1.0f, 1.0f, 1.0f),
-				true,
-				0.0f
-			);
-			
-			Scene3d::addDebugSphere(
-				poses[i],
-				1.414f,
-				rot,
-				glm::vec3(0.0f, 0.0f, 1.0f),
-				false,
-				0.0f
-			);
-		}
 	}
 }
