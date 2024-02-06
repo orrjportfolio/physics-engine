@@ -4,31 +4,52 @@
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
 
+#include "entity/entity.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/scene3d.hpp"
 
 namespace Game {
 	static auto white = Material{
 		.kind = Material::KIND_LIT_UNTEXED,
-		.colour = glm::vec3(1.0f, 1.0f, 1.0f)
+		.colour = glm::vec3(1.0f)
+	};
+	static auto grey = Material{
+		.kind = Material::KIND_LIT_UNTEXED,
+		.colour = glm::vec3(0.5f)
 	};
 	
-	static Mesh3d cubeMesh;
-	
-	glm::vec3 poses[10000];
+	static Mesh3d
+		sphereMesh,
+		cubeMesh;
 	
 	void init() {
+		sphereMesh = Mesh3d::load("assets/models/sphere.obj");
 		cubeMesh = Mesh3d::load("assets/models/cube.obj");
 		
-		Scene3d::cam.pos = glm::vec3(0.0f, 0.0f, 3.0f);
+		Scene3d::cam.pos = glm::vec3(0.0f, 5.0f, 15.0f);
 		
-		for (int i = 0; i < 10000; i++) {
-			poses[i] = glm::vec3(
-				(rand() / (float)RAND_MAX) * 100.0f,
-				(rand() / (float)RAND_MAX) * 100.0f,
-				(rand() / (float)RAND_MAX) * 100.0f
-			);
-		}
+		auto ground = Entity::create(glm::vec3(0.0f));
+		ground.makeKinematic(
+			ColliderShape::axisAlignedBox(glm::vec3(10.0f, 1.0f, 10.0f)),
+			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f}
+		);
+		ground.addMesh(cubeMesh, grey, glm::vec3(0.0f), glm::vec3(10.0f, 1.0f, 10.0f));
+		
+		auto e = Entity::create(glm::vec3(0.7f, 5.0f, 0.0f));
+		e.makeDynamic(
+			ColliderShape::sphere(1.0f),
+			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
+			1.0f
+		);
+		e.addMesh(sphereMesh, white);
+		
+		e = Entity::create(glm::vec3(-0.7f, 10.0f, 0.0f));
+		e.makeDynamic(
+			ColliderShape::box(glm::vec3(1.0f)),
+			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
+			1.0f
+		);
+		e.addMesh(cubeMesh, white);
 	}
 	
 	void update(float dt) {

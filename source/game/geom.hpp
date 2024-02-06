@@ -51,11 +51,11 @@ namespace Sphere {
 	
 	static Overlap obbOverlap(
 		glm::vec3 aPos, float aRadius,
-		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::mat4 const &bBodyMatInv
+		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::mat4 const &bInvBodyMat
 	) {
 		auto aPosM = glm::vec3(bBodyMat * glm::vec4(aPos, 1));
 		auto pM = glm::clamp(aPosM, bMinPosM, bMaxPosM);
-		auto p = glm::vec3(bBodyMatInv * glm::vec4(pM, 1));
+		auto p = glm::vec3(bInvBodyMat * glm::vec4(pM, 1));
 		auto diff = aPos - p;
 		auto dist = glm::length(diff);
 		
@@ -104,11 +104,11 @@ namespace Sphere {
 	
 	static glm::vec3 obbContact(
 		glm::vec3 aPos, float aRadius,
-		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::mat4 const &bBodyMatInv
+		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::mat4 const &bInvBodyMat
 	) {
 		auto aPosM = glm::vec3(bBodyMat * glm::vec4(aPos, 1));
 		auto pM = glm::clamp(aPosM, bMinPosM, bMaxPosM);
-		return bBodyMatInv * glm::vec4(pM, 1);
+		return bInvBodyMat * glm::vec4(pM, 1);
 	}
 	
 	static glm::vec3 planeContact(
@@ -259,24 +259,24 @@ namespace Aabb {
 
 namespace Obb {
 	static void verts(
-		glm::vec3 pos, glm::vec3 halfExtents, glm::mat3 rot,
+		glm::vec3 pos, glm::vec3 halfSize, glm::mat3 const &rot,
 		glm::vec3 *oVerts
 	) {
-		oVerts[0] = pos + (rot * glm::vec3(-halfExtents.x, -halfExtents.y, -halfExtents.z));
-		oVerts[1] = pos + (rot * glm::vec3(halfExtents.x, -halfExtents.y, -halfExtents.z));
-		oVerts[2] = pos + (rot * glm::vec3(halfExtents.x, halfExtents.y, -halfExtents.z));
-		oVerts[3] = pos + (rot * glm::vec3(-halfExtents.x, halfExtents.y, -halfExtents.z));
-		oVerts[4] = pos + (rot * glm::vec3(-halfExtents.x, -halfExtents.y, halfExtents.z));
-		oVerts[5] = pos + (rot * glm::vec3(halfExtents.x, -halfExtents.y, halfExtents.z));
-		oVerts[6] = pos + (rot * glm::vec3(halfExtents.x, halfExtents.y, halfExtents.z));
-		oVerts[7] = pos + (rot * glm::vec3(-halfExtents.x, halfExtents.y, halfExtents.z));
+		oVerts[0] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, -halfSize.z));
+		oVerts[1] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, -halfSize.z));
+		oVerts[2] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, -halfSize.z));
+		oVerts[3] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, -halfSize.z));
+		oVerts[4] = pos + (rot * glm::vec3(-halfSize.x, -halfSize.y, halfSize.z));
+		oVerts[5] = pos + (rot * glm::vec3(halfSize.x, -halfSize.y, halfSize.z));
+		oVerts[6] = pos + (rot * glm::vec3(halfSize.x, halfSize.y, halfSize.z));
+		oVerts[7] = pos + (rot * glm::vec3(-halfSize.x, halfSize.y, halfSize.z));
 	}
 	
 	static Overlap sphereOverlap(
-		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aBodyMat, glm::mat4 const &aBodyMatInv,
+		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aModelMat, glm::mat4 const &aInvModelMat,
 		glm::vec3 bPos, float bRadius
 	) {
-		auto o = Sphere::obbOverlap(bPos, bRadius, aMinPosM, aMaxPosM, aBodyMat, aBodyMatInv);
+		auto o = Sphere::obbOverlap(bPos, bRadius, aMinPosM, aMaxPosM, aModelMat, aInvModelMat);
 		if (o.exists) { o.norm *= -1; }
 		return o;
 	}
@@ -400,14 +400,14 @@ namespace Obb {
 	}
 	
 	static glm::vec3 sphereContact(
-		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aBodyMat, glm::mat4 const &aBodyMatInv,
+		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aModelMat, glm::mat4 const &aInvModelMat,
 		glm::vec3 bPos, float bRadius
 	) {
-		return Sphere::obbContact(bPos, bRadius, aMinPosM, aMaxPosM, aBodyMat, aBodyMatInv);
+		return Sphere::obbContact(bPos, bRadius, aMinPosM, aMaxPosM, aModelMat, aInvModelMat);
 	}
 	
 	static size_t obbContacts(
-		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aBodyMat, glm::vec3 const *aVerts,
+		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aModelMat, glm::vec3 const *aVerts,
 		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::vec3 const *bVerts,
 		glm::vec3 *oContacts
 	) {
@@ -432,7 +432,7 @@ namespace Obb {
 		};
 		
 		getFaceContacts(aVerts, bMinPosM, bMaxPosM, bBodyMat);
-		getFaceContacts(bVerts, aMinPosM, aMaxPosM, aBodyMat);
+		getFaceContacts(bVerts, aMinPosM, aMaxPosM, aModelMat);
 		
 		int edges[][2] = {
 			{0, 1}, {1, 2}, {2, 3}, {3, 0},
@@ -480,7 +480,7 @@ namespace Obb {
 		}
 		
 		size_t i = 0;
-		for (; i < (numContacts < 8)? numContacts : 8; i++) {
+		for (; i < ((numContacts < 8)? numContacts : 8); i++) {
 			for (size_t j = i + 1; j < numContacts; j++) {
 				auto diff = glm::abs(contacts[j] - contacts[i]);
 				

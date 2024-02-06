@@ -1,12 +1,11 @@
 #include "app.hpp"
 
 #include <cassert>
-#include <chrono>
-#include <iostream>
 
 #include <GL/gl3w.h>
 #include <SDL2/SDL.h>
 
+#include "entity/entity.hpp"
 #include "gfx/scene3d.hpp"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -22,17 +21,16 @@ namespace App {
 	}
 	
 	static void update(float dt) {
+		Entity::simulateAll(dt);
+		
 		Game::update(dt);
 		
 		int windowW, windowH;
 		SDL_GetWindowSize(window, &windowW, &windowH);
 		
-		auto start = std::chrono::steady_clock::now();
+		Entity::addAllToScene3d();
 		
 		Scene3d::draw(windowW, windowH, dt);
-		
-		auto end = std::chrono::steady_clock::now();
-		std::cout << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0) << " ms\n";
 	}
 	
 	void run() {
