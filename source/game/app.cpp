@@ -26,11 +26,13 @@ namespace App {
 	
 	static void update(float dt) {
 		auto keysHeld = SDL_GetKeyboardState(nullptr);
-		if (keysHeld[SDL_SCANCODE_SPACE]) {
+		static auto prevSpaceHeld = false;
+		if (keysHeld[SDL_SCANCODE_SPACE]/* && !prevSpaceHeld*/) {
 			for (int i = 0; i < 2; i++) {
 				Entity::simulateAll(TARGET_FRAME_DUR / 2.0f);
 			}
 		}
+		prevSpaceHeld = keysHeld[SDL_SCANCODE_SPACE];
 		
 		Game::update(dt);
 		

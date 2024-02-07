@@ -154,14 +154,14 @@ struct Entity {
 	glm::mat4 bodyMat() {
 		return
 			glm::translate(poses[idx]) *
-			glm::mat4(rots[idx]) *
+			glm::mat4(glm::transpose(rots[idx])) *
 			glm::translate(-poses[idx]);
 	}
 	
 	glm::mat4 bodyMatInv() {
 		return
 			glm::translate(poses[idx]) *
-			glm::mat4(glm::transpose(rots[idx])) *
+			glm::mat4(rots[idx]) *
 			glm::translate(-poses[idx]);
 	}
 	

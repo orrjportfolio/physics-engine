@@ -248,6 +248,10 @@ void Entity::simulateAll(float dt) {
 				}
 			}
 			
+			/*for (size_t i = 0; i < numContacts; i++) {
+				Scene3d::addDebugPoint(contacts[i], glm::vec3(1.0f), true, 0.5f);
+			}*/
+			
 			auto n = overlap.norm;
 			auto e = glm::max(bouncinesses[a], bouncinesses[b]);
 			
@@ -291,8 +295,8 @@ void Entity::simulateAll(float dt) {
 				auto contact = contacts[i];
 				auto impulse = impulseMags[i] * n;
 				
-				Scene3d::addDebugLine(contact, contact + impulse, glm::vec3(1.0f, 0.0f, 0.0f), true, 0.0f);
-				Scene3d::addDebugLine(contact, contact - impulse, glm::vec3(0.0f, 1.0f, 1.0f), true, 0.0f);
+				//Scene3d::addDebugLine(contact, contact + impulse, glm::vec3(1.0f, 0.0f, 0.0f), true, 0.5f);
+				//Scene3d::addDebugLine(contact, contact - impulse, glm::vec3(0.0f, 1.0f, 1.0f), true, 0.5f);
 				
 				if (aK == COLLIDER_KIND_DYNAMIC) {
 					aVel += impulse * aInvMass;
@@ -346,8 +350,8 @@ void Entity::simulateAll(float dt) {
 				auto contact = contacts[i];
 				auto frictionImpulse = frictImpulses[i];
 				
-				Scene3d::addDebugLine(contact, contact + frictionImpulse, glm::vec3(1.0f, 1.0f, 0.0f), true, 0.0f);
-				Scene3d::addDebugLine(contact, contact - frictionImpulse, glm::vec3(0.0f, 0.0f, 1.0f), true, 0.0f);
+				//Scene3d::addDebugLine(contact, contact + frictionImpulse, glm::vec3(1.0f, 1.0f, 0.0f), true, 0.5f);
+				//Scene3d::addDebugLine(contact, contact - frictionImpulse, glm::vec3(0.0f, 0.0f, 1.0f), true, 0.5f);
 				
 				if (aK == COLLIDER_KIND_DYNAMIC) {
 					aVel += frictionImpulse * aInvMass;
