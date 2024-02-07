@@ -35,21 +35,22 @@ namespace Game {
 		);
 		ground.addMesh(cubeMesh, grey, glm::vec3(0.0f), glm::vec3(10.0f, 1.0f, 10.0f));
 		
-		auto e = Entity::create(glm::vec3(0.7f, 5.0f, 0.0f));
-		e.makeDynamic(
-			ColliderShape::sphere(1.0f),
-			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
-			1.0f
-		);
-		e.addMesh(sphereMesh, white);
-		
-		e = Entity::create(glm::vec3(-0.7f, 10.0f, 0.0f));
-		e.makeDynamic(
-			ColliderShape::box(glm::vec3(1.0f)),
-			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
-			1.0f
-		);
-		e.addMesh(cubeMesh, white);
+		for (int i = 0; i < 20; i++) {
+			int k = rand() % 2;
+			auto p = glm::vec3(
+				(rand() / (float)RAND_MAX) * 20.0f - 10.0f,
+				(rand() / (float)RAND_MAX) * 10.0f + 1.0f,
+				(rand() / (float)RAND_MAX) * 20.0f - 10.0f
+			);
+			
+			auto e = Entity::create(p);
+			e.makeDynamic(
+				k? ColliderShape::sphere(1.0f) : ColliderShape::box(glm::vec3(1.0f)),
+				PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
+				1.0f
+			);
+			e.addMesh(k? sphereMesh : cubeMesh, white);
+		}
 	}
 	
 	void update(float dt) {

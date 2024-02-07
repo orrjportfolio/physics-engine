@@ -13,6 +13,10 @@
 #include "game.hpp"
 
 namespace App {
+	constexpr float
+		TARGET_FPS = 60.0f,
+		TARGET_FRAME_DUR = 1.0f / TARGET_FPS;
+	
 	static SDL_Window *window;
 	
 	static void init() {
@@ -21,7 +25,12 @@ namespace App {
 	}
 	
 	static void update(float dt) {
-		Entity::simulateAll(dt);
+		auto keysHeld = SDL_GetKeyboardState(nullptr);
+		if (keysHeld[SDL_SCANCODE_SPACE]) {
+			for (int i = 0; i < 2; i++) {
+				Entity::simulateAll(TARGET_FRAME_DUR / 2.0f);
+			}
+		}
 		
 		Game::update(dt);
 		
@@ -68,28 +77,45 @@ namespace App {
 		
 		SDL_ShowWindow(window);
 		
+		float frameDur = 0.0f;
+		float dt = 0.0f;
+		
+		auto startTime = SDL_GetTicks();
+		
 		bool shouldQuit = false;
 		
 		while (!shouldQuit) {
-			SDL_Event event;
-			while (SDL_PollEvent(&event) != 0) {
-				if (event.type == SDL_QUIT) {
-					shouldQuit = true;
+			auto currentTime = SDL_GetTicks();
+			auto elapsedTime = (currentTime - startTime) / 1000.0f;
+			startTime = currentTime;
+			
+			frameDur += elapsedTime;
+			dt += elapsedTime;
+			
+			if (frameDur >= TARGET_FRAME_DUR) {
+				SDL_Event event;
+				while (SDL_PollEvent(&event) != 0) {
+					if (event.type == SDL_QUIT) {
+						shouldQuit = true;
+					}
+					
+					ImGui_ImplSDL2_ProcessEvent(&event);
 				}
 				
-				ImGui_ImplSDL2_ProcessEvent(&event);
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplSDL2_NewFrame();
+				ImGui::NewFrame();
+				
+				update(dt);
+				
+				ImGui::Render();
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				
+				SDL_GL_SwapWindow(window);
+				
+				frameDur = fmodf(frameDur, TARGET_FRAME_DUR);
+				dt = 0.0f;
 			}
-			
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplSDL2_NewFrame();
-			ImGui::NewFrame();
-			
-			update(1.0f / 60.0f);
-			
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-			
-			SDL_GL_SwapWindow(window);
 		}
 	}
 }

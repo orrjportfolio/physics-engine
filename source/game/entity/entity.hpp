@@ -174,10 +174,13 @@ struct Entity {
 	}
 	
 	void colliderBounds(glm::vec3 *oMin, glm::vec3 *oMax) {
-		auto r = colliderHalfSizes[idx] * ((
+		glm::vec3 r = colliderHalfSizes[idx];
+		if (
 			flags[idx].colliderShapeKind == ColliderShape::KIND_BOX &&
 			!flags[idx].colliderIsAxisAligned
-		)? 1.4142136f : 1.0f);
+		) {
+			r = glm::vec3(std::max({r.x, r.y, r.z}) * 1.732051f);
+		}
 		
 		*oMin = poses[idx] - r;
 		*oMax = poses[idx] + r;
