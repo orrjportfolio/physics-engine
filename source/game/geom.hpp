@@ -38,6 +38,14 @@ namespace Sphere {
 		auto diff = aPos - p;
 		auto dist = glm::length(diff);
 		
+		if (dist == 0.0f) {
+			return Overlap{
+				.exists = true,
+				.norm = glm::vec3(0.0f, 1.0f, 0.0f),
+				.depth = std::max({bMaxPos.x - bMinPos.x, bMaxPos.y - bMinPos.y, bMaxPos.z - bMinPos.z})
+			};
+		}
+		
 		if (dist < aRadius) {
 			return Overlap{
 				.exists = true,
@@ -58,6 +66,14 @@ namespace Sphere {
 		auto p = glm::vec3(bInvBodyMat * glm::vec4(pM, 1));
 		auto diff = aPos - p;
 		auto dist = glm::length(diff);
+		
+		if (dist == 0.0f) {
+			return Overlap{
+				.exists = true,
+				.norm = glm::vec3(0.0f, 1.0f, 0.0f),
+				.depth = std::max({bMaxPosM.x - bMinPosM.x, bMaxPosM.y - bMinPosM.y, bMaxPosM.z - bMinPosM.z}) * 1.732051f
+			};
+		}
 		
 		if (dist < aRadius) {
 			return Overlap{

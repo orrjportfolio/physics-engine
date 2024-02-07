@@ -75,7 +75,7 @@ struct Entity {
 	};
 	
 	static constexpr uint32_t
-		CAP = 256;
+		CAP = 1024;
 	static inline uint32_t
 		num;
 		
