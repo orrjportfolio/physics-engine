@@ -17,6 +17,14 @@ namespace Game {
 		.kind = Material::KIND_LIT_UNTEXED,
 		.colour = glm::vec3(0.5f)
 	};
+	static auto purple = Material{
+		.kind = Material::KIND_LIT_UNTEXED,
+		.colour = glm::vec3(0.85f, 0.7f, 1.0f)
+	};
+	static auto green = Material{
+		.kind = Material::KIND_LIT_UNTEXED,
+		.colour = glm::vec3(0.7f, 1.0f, 0.7f)
+	};
 	
 	static Mesh3d
 		sphereMesh,
@@ -35,8 +43,8 @@ namespace Game {
 		);
 		ground.addMesh(cubeMesh, grey, glm::vec3(0.0f), glm::vec3(100.0f, 1.0f, 100.0f));
 		
-		for (int i = 0; i < 400; i++) {
-			int k = rand() % 2;
+		for (int i = 0; i < 800; i++) {
+			int k = rand() % 3;
 			auto p = glm::vec3(
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f,
 				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
@@ -45,11 +53,14 @@ namespace Game {
 			
 			auto e = Entity::create(p);
 			e.makeDynamic(
-				k? ColliderShape::sphere(1.0f) : ColliderShape::box(glm::vec3(1.0f)),
+				(k == 0)?
+					ColliderShape::sphere(1.0f) :
+					(k == 1)? ColliderShape::box(glm::vec3(1.0f)) :
+						ColliderShape::axisAlignedBox(glm::vec3(1.0f)),
 				PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
 				1.0f
 			);
-			e.addMesh(k? sphereMesh : cubeMesh, white);
+			e.addMesh((k > 0)? cubeMesh : sphereMesh, (k == 0)? purple : (k == 1)? white : green);
 		}
 	}
 	
