@@ -186,9 +186,7 @@ struct Entity {
 		*oMax = poses[idx] + r;
 	}
 	
-	void setPos(glm::vec3 pos) {
-		poses[idx] = pos;
-	}
+	void setPos(glm::vec3 pos);
 	
 	void setVel(glm::vec3 vel) {
 		vels[idx] = vel;
@@ -202,77 +200,11 @@ struct Entity {
 		rotVels[idx] = rotVel;
 	}
 	
-	void makeTrigger(ColliderShape shape) {
-		flags[idx].colliderKind = COLLIDER_KIND_TRIGGER;
-		flags[idx].colliderShapeKind = shape.kind;
-		flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
-		
-		colliderHalfSizes[idx] = shape.halfSize;
-	}
+	void makeTrigger(ColliderShape shape);
 	
-	void makeKinematic(ColliderShape shape, PhysicsMaterial material) {
-		flags[idx].colliderKind = COLLIDER_KIND_KINEMATIC;
-		flags[idx].colliderShapeKind = shape.kind;
-		flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
-		
-		colliderHalfSizes[idx] = shape.halfSize;
-		
-		sFricts[idx] = material.sFrict;
-		dFricts[idx] = material.dFrict;
-		bouncinesses[idx] = material.bounciness;
-		
-		vels[idx] = glm::vec3(0.0f);
-		invMasses[idx] = 0.0f;
-		forces[idx] = glm::vec3(0.0f);
-		
-		rotVels[idx] = glm::vec3(0.0f);
-		invLocalInertiaTensors[idx] = glm::vec3(0.0f);
-		invInertiaTensors[idx] = glm::mat3(0.0f);
-		torques[idx] = glm::vec3(0.0f);
-	}
+	void makeKinematic(ColliderShape shape, PhysicsMaterial material);
 	
-	void makeDynamic(ColliderShape shape, PhysicsMaterial material, float density) {
-		glm::vec3 size = shape.halfSize * 2.0f;
-		
-		float volume =
-			(shape.kind == ColliderShape::KIND_SPHERE)?
-				(4.0f * (float)M_PI * shape.halfSize.x * shape.halfSize.x * shape.halfSize.x) / 3.0f :
-				size.x * size.y * size.z;
-		float mass = density * volume;
-		
-		auto invLocalInertiaTensor =
-			(shape.kind == ColliderShape::KIND_SPHERE)?
-				glm::vec3(5.0f / (2.0f * mass * shape.halfSize.x * shape.halfSize.x)) :
-				glm::vec3(
-					12.0f / (mass * ((size.y * size.y) + (size.z * size.z))),
-					12.0f / (mass * ((size.x * size.x) + (size.y * size.y))),
-					12.0f / (mass * ((size.x * size.x) + (size.z * size.z)))
-				);
-		
-		flags[idx].colliderKind = COLLIDER_KIND_DYNAMIC;
-		flags[idx].colliderShapeKind = shape.kind;
-		flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
-		
-		colliderHalfSizes[idx] = shape.halfSize;
-		
-		sFricts[idx] = material.sFrict;
-		dFricts[idx] = material.dFrict;
-		bouncinesses[idx] = material.bounciness;
-		
-		vels[idx] = glm::vec3(0.0f);
-		invMasses[idx] = 1.0f / mass;
-		forces[idx] = glm::vec3(0.0f);
-		
-		rotMoms[idx] = glm::vec3(0.0f);
-		rotVels[idx] = glm::vec3(0.0f);
-		invLocalInertiaTensors[idx] = invLocalInertiaTensor;
-		invInertiaTensors[idx] = rots[idx] * glm::mat3(
-			invLocalInertiaTensor.x, 0, 0,
-			0, invLocalInertiaTensor.y, 0,
-			0, 0, invLocalInertiaTensor.z
-		) * glm::transpose(rots[idx]);
-		torques[idx] = glm::vec3(0.0f);
-	}
+	void makeDynamic(ColliderShape shape, PhysicsMaterial material, float density);
 	
 	void addMesh(
 		Mesh3d const &mesh,

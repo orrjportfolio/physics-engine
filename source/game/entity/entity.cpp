@@ -6,12 +6,23 @@
 
 #include "../gfx/scene3d.hpp"
 #include "../geom.hpp"
+#include "octree.hpp"
 
 void Entity::simulateAll(float dt) {
 	for (uint32_t i = 0; i < num; i++) {
 		uint32_t k = flags[i].colliderKind;
 		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
-			poses[i] += vels[i] * dt;
+			if (vels[i] != glm::vec3(0.0f)) {
+				glm::vec3 prevMin, prevMax;
+				byIdx(i).colliderBounds(&prevMin, &prevMax);
+				
+				poses[i] += vels[i] * dt;
+				
+				glm::vec3 min, max;
+				byIdx(i).colliderBounds(&min, &max);
+				
+				Octree::root.moveEntry(i, prevMin, prevMax, min, max);
+			}
 			
 			if (k == COLLIDER_KIND_DYNAMIC) {
 				auto accel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
@@ -28,12 +39,14 @@ void Entity::simulateAll(float dt) {
 			(k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) &&
 			!flags[i].colliderIsAxisAligned
 		) {
-			auto rotVelMat = glm::mat3(
-				0, -rotVels[i].z, rotVels[i].y,
-				rotVels[i].z, 0, -rotVels[i].x,
-				-rotVels[i].y, rotVels[i].x, 0
-			);
-			rots[i] = glm::orthonormalize(rots[i] + ((-rotVelMat * dt) * rots[i]));
+			if (rotVels[i] != glm::vec3(0.0f)) {
+				auto rotVelMat = glm::mat3(
+					0, -rotVels[i].z, rotVels[i].y,
+					rotVels[i].z, 0, -rotVels[i].x,
+					-rotVels[i].y, rotVels[i].x, 0
+				);
+				rots[i] = glm::orthonormalize(rots[i] + ((-rotVelMat * dt) * rots[i]));
+			}
 			
 			if (k == COLLIDER_KIND_DYNAMIC) {
 				invInertiaTensors[i] =
@@ -54,20 +67,27 @@ void Entity::simulateAll(float dt) {
 		uint32_t aK = flags[a].colliderKind;
 		if (aK == COLLIDER_KIND_NONE) { continue; }
 		
-		for (uint32_t b = a + 1; b < num; b++) {
+		auto aE = Entity::byIdx(a);
+		
+		glm::vec3 aMin, aMax;
+		aE.colliderBounds(&aMin, &aMax);
+		
+		std::vector<uint32_t> overlaps;
+		Octree::root.overlaps(aMin, aMax, overlaps);
+		
+		for (uint32_t b : overlaps) {
+			if (a == b) { continue; }
+		//for (uint32_t b = a + 1; b < num; b++) {
 			uint32_t bK = flags[b].colliderKind;
 			if (bK == COLLIDER_KIND_NONE || (
 				(aK == COLLIDER_KIND_TRIGGER || aK == COLLIDER_KIND_KINEMATIC) &&
 				(aK == bK)
 			)) { continue; }
 			
-			auto aE = Entity::byIdx(a);
+			
 			auto bE = Entity::byIdx(b);
 			
-			glm::vec3
-				aMin, aMax,
-				bMin, bMax;
-			aE.colliderBounds(&aMin, &aMax);
+			glm::vec3 bMin, bMax;
 			bE.colliderBounds(&bMin, &bMax);
 			
 			if (
@@ -168,13 +188,32 @@ void Entity::simulateAll(float dt) {
 			}
 			else if (aK == COLLIDER_KIND_KINEMATIC) {
 				bPos -= correct;
+				
+				glm::vec3 bNewMin, bNewMax;
+				byIdx(b).colliderBounds(&bNewMin, &bNewMax);
+				
+				Octree::root.moveEntry(b, bMin, bMax, bNewMin, bNewMax);
 			}
 			else if (bK == COLLIDER_KIND_KINEMATIC) {
 				aPos += correct;
+				
+				glm::vec3 aNewMin, aNewMax;
+				byIdx(a).colliderBounds(&aNewMin, &aNewMax);
+				
+				Octree::root.moveEntry(a, aMin, aMax, aNewMin, aNewMax);
 			}
 			else {
 				bPos -= correct / 2.0f;
 				aPos += correct / 2.0f;
+				
+				glm::vec3
+					bNewMin, bNewMax,
+					aNewMin, aNewMax;
+				byIdx(b).colliderBounds(&bNewMin, &bNewMax);
+				byIdx(a).colliderBounds(&aNewMin, &aNewMax);
+				
+				Octree::root.moveEntry(a, aMin, aMax, aNewMin, aNewMax);
+				Octree::root.moveEntry(b, bMin, bMax, bNewMin, bNewMax);
 			}
 			
 			size_t numContacts;
@@ -268,7 +307,7 @@ void Entity::simulateAll(float dt) {
 			auto bInvInertiaTensor = invInertiaTensors[b];
 			
 			float impulseMags[8];
-			glm::vec3 impulses[8];
+			
 			for (size_t i = 0; i < numContacts; i++) {
 				auto contact = contacts[i];
 				
@@ -300,12 +339,16 @@ void Entity::simulateAll(float dt) {
 				
 				if (aK == COLLIDER_KIND_DYNAMIC) {
 					aVel += impulse * aInvMass;
-					aRotMom += glm::cross(contact - aPos, impulse);
+					if (!aAA) {
+						aRotMom += glm::cross(contact - aPos, impulse);
+					}
 				}
 				
 				if (bK == COLLIDER_KIND_DYNAMIC) {
 					bVel += -impulse * bInvMass;
-					bRotMom += glm::cross(contact - bPos, -impulse);
+					if (!bAA) {
+						bRotMom += glm::cross(contact - bPos, -impulse);
+					}
 				}
 			}
 			
@@ -328,6 +371,11 @@ void Entity::simulateAll(float dt) {
 				auto baVel = bpVel - apVel;
 				
 				auto tan = abVel - (n * glm::dot(abVel, n));
+				if (length(tan) == 0.0f) {
+					frictImpulses[i] = glm::vec3(0.0f);
+					continue;
+				}
+				tan = glm::normalize(tan);
 				
 				float jT =
 					glm::dot(-abVel, tan) / (
@@ -341,7 +389,7 @@ void Entity::simulateAll(float dt) {
 				float j = impulseMags[i];
 				
 				frictImpulses[i] =
-					(glm::abs(jT) < j * sFrict)?
+					(glm::abs(jT) <= j * sFrict)?
 						(jT * tan) :
 						(-j * tan * dFrict);
 			}
@@ -355,12 +403,16 @@ void Entity::simulateAll(float dt) {
 				
 				if (aK == COLLIDER_KIND_DYNAMIC) {
 					aVel += frictionImpulse * aInvMass;
-					aRotMom += glm::cross(contact - aPos, frictionImpulse);
+					if (!aAA) {
+						aRotMom += glm::cross(contact - aPos, frictionImpulse);
+					}
 				}
 				
 				if (bK == COLLIDER_KIND_DYNAMIC) {
 					bVel += -frictionImpulse * bInvMass;
-					bRotMom += glm::cross(contact - bPos, -frictionImpulse);
+					if (!bAA) {
+						bRotMom += glm::cross(contact - bPos, -frictionImpulse);
+					}
 				}
 			}
 			
@@ -412,4 +464,104 @@ void Entity::destroy() {
 	gens[idx]++;
 	
 	empties[numEmpties++] = idx;
+}
+
+void Entity::setPos(glm::vec3 pos) {
+	if (flags[idx].colliderKind != COLLIDER_KIND_NONE) {
+		glm::vec3 prevMin, prevMax;
+		colliderBounds(&prevMin, &prevMax);
+		
+		poses[idx] = pos;
+		
+		glm::vec3 min, max;
+		colliderBounds(&min, &max);
+		Octree::root.moveEntry(idx, prevMin, prevMax, min, max);
+	}
+	else {
+		poses[idx] = pos;
+	}
+}
+
+void Entity::makeTrigger(ColliderShape shape) {
+	flags[idx].colliderKind = COLLIDER_KIND_TRIGGER;
+	flags[idx].colliderShapeKind = shape.kind;
+	flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
+	
+	colliderHalfSizes[idx] = shape.halfSize;
+	
+	glm::vec3 min, max;
+	colliderBounds(&min, &max);
+	Octree::root.addEntry(idx, min, max);
+}
+
+void Entity::makeKinematic(ColliderShape shape, PhysicsMaterial material) {
+	flags[idx].colliderKind = COLLIDER_KIND_KINEMATIC;
+	flags[idx].colliderShapeKind = shape.kind;
+	flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
+	
+	colliderHalfSizes[idx] = shape.halfSize;
+	
+	sFricts[idx] = material.sFrict;
+	dFricts[idx] = material.dFrict;
+	bouncinesses[idx] = material.bounciness;
+	
+	vels[idx] = glm::vec3(0.0f);
+	invMasses[idx] = 0.0f;
+	forces[idx] = glm::vec3(0.0f);
+	
+	rotVels[idx] = glm::vec3(0.0f);
+	invLocalInertiaTensors[idx] = glm::vec3(0.0f);
+	invInertiaTensors[idx] = glm::mat3(0.0f);
+	torques[idx] = glm::vec3(0.0f);
+	
+	glm::vec3 min, max;
+	colliderBounds(&min, &max);
+	Octree::root.addEntry(idx, min, max);
+}
+
+void Entity::makeDynamic(ColliderShape shape, PhysicsMaterial material, float density) {
+	glm::vec3 size = shape.halfSize * 2.0f;
+	
+	float volume =
+		(shape.kind == ColliderShape::KIND_SPHERE)?
+			(4.0f * (float)M_PI * shape.halfSize.x * shape.halfSize.x * shape.halfSize.x) / 3.0f :
+			size.x * size.y * size.z;
+	float mass = density * volume;
+	
+	auto invLocalInertiaTensor =
+		(shape.kind == ColliderShape::KIND_SPHERE)?
+			glm::vec3(5.0f / (2.0f * mass * shape.halfSize.x * shape.halfSize.x)) :
+			glm::vec3(
+				12.0f / (mass * ((size.y * size.y) + (size.z * size.z))),
+				12.0f / (mass * ((size.x * size.x) + (size.y * size.y))),
+				12.0f / (mass * ((size.x * size.x) + (size.z * size.z)))
+			);
+	
+	flags[idx].colliderKind = COLLIDER_KIND_DYNAMIC;
+	flags[idx].colliderShapeKind = shape.kind;
+	flags[idx].colliderIsAxisAligned = shape.isAxisAligned;
+	
+	colliderHalfSizes[idx] = shape.halfSize;
+	
+	sFricts[idx] = material.sFrict;
+	dFricts[idx] = material.dFrict;
+	bouncinesses[idx] = material.bounciness;
+	
+	vels[idx] = glm::vec3(0.0f);
+	invMasses[idx] = 1.0f / mass;
+	forces[idx] = glm::vec3(0.0f);
+	
+	rotMoms[idx] = glm::vec3(0.0f);
+	rotVels[idx] = glm::vec3(0.0f);
+	invLocalInertiaTensors[idx] = invLocalInertiaTensor;
+	invInertiaTensors[idx] = rots[idx] * glm::mat3(
+		invLocalInertiaTensor.x, 0, 0,
+		0, invLocalInertiaTensor.y, 0,
+		0, 0, invLocalInertiaTensor.z
+	) * glm::transpose(rots[idx]);
+	torques[idx] = glm::vec3(0.0f);
+	
+	glm::vec3 min, max;
+	colliderBounds(&min, &max);
+	Octree::root.addEntry(idx, min, max);
 }

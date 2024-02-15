@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 
 #include "entity/entity.hpp"
+#include "entity/octree.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/scene3d.hpp"
 
@@ -30,6 +31,34 @@ namespace Game {
 		sphereMesh,
 		cubeMesh;
 	
+	void f(Octree *o) {
+		auto
+			min = o->minPos,
+			max = o->maxPos;
+		
+		auto colour = glm::vec3(
+			0.5f + ((rand() / (float)RAND_MAX) * 0.5f),
+			0.5f + ((rand() / (float)RAND_MAX) * 0.5f),
+			0.5f + ((rand() / (float)RAND_MAX) * 0.5f)
+		);
+		
+		Scene3d::addDebugCube((min + max) / 2.0f, ((max - min) / 2.0f) * 0.95f, glm::identity<glm::mat3>(), colour, false, 0.0f);
+		
+		for (auto e : o->entries) {
+			auto
+				eMin = e.minPos,
+				eMax = e.maxPos;
+			
+			Scene3d::addDebugCube((eMin + eMax) / 2.0f, ((eMax - eMin) / 2.0f) * 1.05f, glm::identity<glm::mat3>(), colour, false, 0.0f);
+		}
+		
+		if (o->children != nullptr) {
+			for (int i = 0; i < 8; i++) {
+				f(&o->children[i]);
+			}
+		}
+	};
+	
 	void init() {
 		sphereMesh = Mesh3d::load("assets/models/sphere.obj");
 		cubeMesh = Mesh3d::load("assets/models/cube.obj");
@@ -43,12 +72,18 @@ namespace Game {
 		);
 		ground.addMesh(cubeMesh, grey, glm::vec3(0.0f), glm::vec3(100.0f, 1.0f, 100.0f));
 		
-		for (int i = 0; i < 800; i++) {
-			int k = rand() % 3;
-			auto p = glm::vec3(
+		for (int i = 0; i < 32; i++) {
+			int k = rand() % 2;
+			/*auto p = glm::vec3(
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f,
 				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f
+			);*/
+			
+			auto p = glm::vec3(
+				(rand() / (float)RAND_MAX) * 12.0f - 6.0f,
+				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
+				(rand() / (float)RAND_MAX) * 12.0f - 6.0f
 			);
 			
 			auto e = Entity::create(p);
@@ -97,5 +132,7 @@ namespace Game {
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 		}
 		
+		/*srand(1);
+		f(&Octree::root);*/
 	}
 }
