@@ -426,12 +426,11 @@ void Entity::addAllToScene3d() {
 	for (uint32_t i = 0; i < num; i++) {
 		if (flags[i].hasMesh) {
 			Scene3d::addObject(
-				meshes[i].mesh,
-				meshes[i].material,
+				meshes[i],
+				meshMaterials[i],
 				(
-					glm::translate(poses[i] + meshes[i].offs) *
-					glm::mat4(rots[i]) *
-					glm::scale(meshes[i].scale)
+					glm::translate(poses[i]) * glm::mat4(rots[i]) *
+					meshMats[i]
 				)
 			);
 		}

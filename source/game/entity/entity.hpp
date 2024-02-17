@@ -68,12 +68,6 @@ struct Entity {
 		uint8_t asInt;
 	};
 	
-	struct Mesh {
-		Mesh3d const *mesh;
-		Material const *material;
-		glm::vec3 offs, scale;
-	};
-	
 	static constexpr uint32_t
 		CAP = 1024;
 	static inline uint32_t
@@ -119,8 +113,12 @@ struct Entity {
 	static inline glm::vec3
 		torques[CAP];
 	
-	static inline Mesh
-		meshes[CAP];
+	static inline Mesh3d
+		*meshes[CAP];
+	static inline Material
+		*meshMaterials[CAP];
+	static inline glm::mat4
+		meshMats[CAP];
 	
 	uint32_t
 		idx, gen;
@@ -207,17 +205,14 @@ struct Entity {
 	void makeDynamic(ColliderShape shape, PhysicsMaterial material, float density);
 	
 	void addMesh(
-		Mesh3d const &mesh,
-		Material const &material,
-		glm::vec3 offs = glm::vec3(0.0f),
-		glm::vec3 scale = glm::vec3(1.0f)
+		Mesh3d &mesh,
+		Material &material,
+		glm::mat4 mat = glm::identity<glm::mat4>()
 	) {
 		flags[idx].hasMesh = true;
 		
-		meshes[idx] = Mesh{
-			.mesh = &mesh,
-			.material = &material,
-			.offs = offs, .scale = scale
-		};
+		meshes[idx] = &mesh;
+		meshMaterials[idx] = &material;
+		meshMats[idx] = mat;
 	}
 };

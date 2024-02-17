@@ -70,21 +70,21 @@ namespace Game {
 			ColliderShape::axisAlignedBox(glm::vec3(100.0f, 1.0f, 100.0f)),
 			PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f}
 		);
-		ground.addMesh(cubeMesh, grey, glm::vec3(0.0f), glm::vec3(100.0f, 1.0f, 100.0f));
+		ground.addMesh(cubeMesh, grey, glm::scale(glm::vec3(100.0f, 1.0f, 100.0f)));
 		
-		for (int i = 0; i < 32; i++) {
+		for (int i = 0; i < 800; i++) {
 			int k = rand() % 2;
-			/*auto p = glm::vec3(
+			auto p = glm::vec3(
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f,
 				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f
-			);*/
+			);
 			
-			auto p = glm::vec3(
+			/*auto p = glm::vec3(
 				(rand() / (float)RAND_MAX) * 12.0f - 6.0f,
 				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
 				(rand() / (float)RAND_MAX) * 12.0f - 6.0f
-			);
+			);*/
 			
 			auto e = Entity::create(p);
 			e.makeDynamic(
