@@ -1,6 +1,8 @@
 #include "entity.hpp"
 
 #include <cassert>
+#include <iostream>
+#include <set>
 
 #include <glm/gtx/orthonormalize.hpp>
 
@@ -9,9 +11,11 @@
 #include "octree.hpp"
 
 void Entity::simulateAll(float dt) {
+	constexpr float fallAsleepSpeed = 0.125f;
+	
 	for (uint32_t i = 0; i < num; i++) {
 		uint32_t k = flags[i].colliderKind;
-		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+		if ((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) {
 			if (vels[i] != glm::vec3(0.0f)) {
 				glm::vec3 prevMin, prevMax;
 				byIdx(i).colliderBounds(&prevMin, &prevMax);
@@ -36,7 +40,7 @@ void Entity::simulateAll(float dt) {
 	for (uint32_t i = 0; i < num; i++) {
 		uint32_t k = flags[i].colliderKind;
 		if (
-			(k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) &&
+			((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) &&
 			!flags[i].colliderIsAxisAligned
 		) {
 			if (rotVels[i] != glm::vec3(0.0f)) {
@@ -75,15 +79,25 @@ void Entity::simulateAll(float dt) {
 		std::vector<uint32_t> overlaps;
 		Octree::root.overlaps(aMin, aMax, overlaps);
 		
+		
+		
 		for (uint32_t b : overlaps) {
 			if (a == b) { continue; }
 		//for (uint32_t b = a + 1; b < num; b++) {
+			if (flags[a].isSleeping && flags[b].isSleeping) {
+				continue;
+			}
+			
 			uint32_t bK = flags[b].colliderKind;
 			if (bK == COLLIDER_KIND_NONE || (
 				(aK == COLLIDER_KIND_TRIGGER || aK == COLLIDER_KIND_KINEMATIC) &&
 				(aK == bK)
 			)) { continue; }
 			
+			if (
+				(aK == COLLIDER_KIND_TRIGGER && flags[b].isSleeping) ||
+				(bK == COLLIDER_KIND_TRIGGER && flags[a].isSleeping)
+			) { continue; }
 			
 			auto bE = Entity::byIdx(b);
 			
@@ -175,6 +189,9 @@ void Entity::simulateAll(float dt) {
 			}
 			
 			if (!overlap.exists) { continue; }
+			
+			if (aK == COLLIDER_KIND_DYNAMIC) { flags[a].isSleeping = false; }
+			if (bK == COLLIDER_KIND_DYNAMIC) { flags[b].isSleeping = false; }
 			
 			auto correct = overlap.norm * overlap.depth;
 			
@@ -371,7 +388,7 @@ void Entity::simulateAll(float dt) {
 				auto baVel = bpVel - apVel;
 				
 				auto tan = abVel - (n * glm::dot(abVel, n));
-				if (length(tan) == 0.0f) {
+				if (tan == glm::vec3(0.0f)) {
 					frictImpulses[i] = glm::vec3(0.0f);
 					continue;
 				}
@@ -418,6 +435,34 @@ void Entity::simulateAll(float dt) {
 			
 			aRotVel = aInvInertiaTensor * aRotMom;
 			bRotVel = bInvInertiaTensor * bRotMom;
+		}
+		
+		Scene3d::addDebugPoint(poses[a], flags[a].isSleeping? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(1.0f, 0.0f, 0.0f), true, 0.0f);
+		
+		if ((aK == COLLIDER_KIND_KINEMATIC || aK == COLLIDER_KIND_DYNAMIC) && !flags[a].isSleeping) {
+			if (glm::length(poses[a] - prevPoses[a]) < fallAsleepSpeed * dt) {
+				restingTimes[a] += dt;
+				if (restingTimes[a] > 0.5f) {
+					flags[a].isSleeping = true;
+					restingTimes[a] = 0.0f;
+				}
+			}
+			else {
+				restingTimes[a] = 0.0f;
+			}
+		}
+		
+		prevPoses[a] = poses[a];
+	}
+}
+
+void Entity::wakeUpAllInRegion(glm::vec3 min, glm::vec3 max) {
+	std::vector<uint32_t> entities;
+	Octree::root.overlaps(min, max, entities);
+	for (auto e : entities) {
+		auto k = flags[e].colliderKind;
+		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+			flags[e].isSleeping = false;
 		}
 	}
 }
@@ -475,6 +520,13 @@ void Entity::setPos(glm::vec3 pos) {
 		glm::vec3 min, max;
 		colliderBounds(&min, &max);
 		Octree::root.moveEntry(idx, prevMin, prevMax, min, max);
+		
+		auto k = flags[idx].colliderKind;
+		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+			wakeUpAllInRegion(min - glm::vec3(0.2f), max + glm::vec3(0.2f));
+			
+			flags[idx].isSleeping = false;
+		}
 	}
 	else {
 		poses[idx] = pos;
@@ -491,6 +543,7 @@ void Entity::makeTrigger(ColliderShape shape) {
 	glm::vec3 min, max;
 	colliderBounds(&min, &max);
 	Octree::root.addEntry(idx, min, max);
+	wakeUpAllInRegion(min - glm::vec3(0.2f), max + glm::vec3(0.2f));
 }
 
 void Entity::makeKinematic(ColliderShape shape, PhysicsMaterial material) {
@@ -516,6 +569,7 @@ void Entity::makeKinematic(ColliderShape shape, PhysicsMaterial material) {
 	glm::vec3 min, max;
 	colliderBounds(&min, &max);
 	Octree::root.addEntry(idx, min, max);
+	wakeUpAllInRegion(min - glm::vec3(0.2f), max + glm::vec3(0.2f));
 }
 
 void Entity::makeDynamic(ColliderShape shape, PhysicsMaterial material, float density) {
@@ -563,4 +617,5 @@ void Entity::makeDynamic(ColliderShape shape, PhysicsMaterial material, float de
 	glm::vec3 min, max;
 	colliderBounds(&min, &max);
 	Octree::root.addEntry(idx, min, max);
+	wakeUpAllInRegion(min - glm::vec3(0.2f), max + glm::vec3(0.2f));
 }

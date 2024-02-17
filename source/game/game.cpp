@@ -72,7 +72,7 @@ namespace Game {
 		);
 		ground.addMesh(cubeMesh, grey, glm::scale(glm::vec3(100.0f, 1.0f, 100.0f)));
 		
-		for (int i = 0; i < 800; i++) {
+		for (int i = 0; i < 400; i++) {
 			int k = rand() % 2;
 			auto p = glm::vec3(
 				(rand() / (float)RAND_MAX) * 200.0f - 100.0f,

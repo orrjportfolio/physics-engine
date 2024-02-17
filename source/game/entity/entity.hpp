@@ -64,6 +64,7 @@ struct Entity {
 			uint8_t colliderKind : 2;
 			uint8_t colliderShapeKind : 1;
 			uint8_t colliderIsAxisAligned : 1;
+			uint8_t isSleeping : 1;
 		};
 		uint8_t asInt;
 	};
@@ -94,6 +95,8 @@ struct Entity {
 	static inline glm::vec3
 		poses[CAP];
 	static inline glm::vec3
+		prevPoses[CAP];
+	static inline glm::vec3
 		vels[CAP];
 	static inline float
 		invMasses[CAP];
@@ -113,6 +116,9 @@ struct Entity {
 	static inline glm::vec3
 		torques[CAP];
 	
+	static inline float
+		restingTimes[CAP];
+	
 	static inline Mesh3d
 		*meshes[CAP];
 	static inline Material
@@ -124,6 +130,8 @@ struct Entity {
 		idx, gen;
 	
 	static void simulateAll(float dt);
+	
+	static void wakeUpAllInRegion(glm::vec3 min, glm::vec3 max);
 	
 	static void addAllToScene3d();
 	
@@ -188,14 +196,26 @@ struct Entity {
 	
 	void setVel(glm::vec3 vel) {
 		vels[idx] = vel;
+		auto k = flags[idx].colliderKind;
+		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+			flags[idx].isSleeping = false;
+		}
 	}
 	
 	void setRot(glm::mat3 rot) {
 		rots[idx] = rot;
+		auto k = flags[idx].colliderKind;
+		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+			flags[idx].isSleeping = false;
+		}
 	}
 	
 	void setRotVel(glm::vec3 rotVel) {
 		rotVels[idx] = rotVel;
+		auto k = flags[idx].colliderKind;
+		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+			flags[idx].isSleeping = false;
+		}
 	}
 	
 	void makeTrigger(ColliderShape shape);

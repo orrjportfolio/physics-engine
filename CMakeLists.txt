@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.25)
 set(CMAKE_CXX_STANDARD "20")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-	add_compile_options("-ffast-math")
+	# causes things to fall through each other :)
+	#add_compile_options("-ffast-math")
 endif()
 
 project(racingGame)
