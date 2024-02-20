@@ -102,6 +102,8 @@ struct Entity {
 		prevPoses[CAP];
 	static inline glm::vec3
 		vels[CAP];
+	static inline glm::vec3
+		accels[CAP];
 	static inline float
 		invMasses[CAP];
 	static inline glm::vec3

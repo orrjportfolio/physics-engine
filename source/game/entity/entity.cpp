@@ -24,22 +24,23 @@ void Entity::simulateAll(float dt) {
 	for (uint32_t i = 0; i < num; i++) {
 		uint32_t k = flags[i].colliderKind;
 		if ((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) {
-			if (vels[i] != glm::vec3(0.0f)) {
-				glm::vec3 prevMin, prevMax;
-				byIdx(i).colliderBounds(&prevMin, &prevMax);
+			glm::vec3 prevMin, prevMax;
+			byIdx(i).colliderBounds(&prevMin, &prevMax);
+			
+			poses[i] += vels[i] * dt;
+			if (k == COLLIDER_KIND_DYNAMIC) {
+				poses[i] += (accels[i] / 2.0f) * (dt * dt);
 				
-				poses[i] += vels[i] * dt;
+				auto newAccel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
+				vels[i] += ((accels[i] + newAccel) / 2.0f) * dt;
 				
-				glm::vec3 min, max;
-				byIdx(i).colliderBounds(&min, &max);
-				
-				Octree::root.moveEntry(i, prevMin, prevMax, min, max);
+				accels[i] = newAccel;
 			}
 			
-			if (k == COLLIDER_KIND_DYNAMIC) {
-				auto accel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
-				vels[i] += accel * dt;
-			}
+			glm::vec3 min, max;
+			byIdx(i).colliderBounds(&min, &max);
+			
+			Octree::root.moveEntry(i, prevMin, prevMax, min, max);
 			
 			forces[i] = glm::vec3(0.0f);
 		}
@@ -629,6 +630,7 @@ void Entity::makeDynamic(ColliderShape shape, PhysicsMaterial material, float de
 	bouncinesses[idx] = material.bounciness;
 	
 	vels[idx] = glm::vec3(0.0f);
+	accels[idx] = glm::vec3(0.0f);
 	invMasses[idx] = 1.0f / mass;
 	forces[idx] = glm::vec3(0.0f);
 	
