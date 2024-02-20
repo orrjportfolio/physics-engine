@@ -69,6 +69,10 @@ struct Entity {
 		uint8_t asInt;
 	};
 	
+	using UpdateFunc = void(*)(Entity e, float dt);
+	using CollideFunc = void(*)(Entity e, glm::vec3 eVel, Entity other, glm::vec3 otherVel, glm::vec3 norm);
+	using TriggerFunc = void(*)(Entity e, Entity other);
+	
 	static constexpr uint32_t
 		CAP = 1024;
 	static inline uint32_t
@@ -126,8 +130,17 @@ struct Entity {
 	static inline glm::mat4
 		meshMats[CAP];
 	
+	static inline UpdateFunc
+		updateFuncs[CAP];
+	static inline CollideFunc
+		collideFuncs[CAP];
+	static inline TriggerFunc
+		triggerFuncs[CAP];
+	
 	uint32_t
 		idx, gen;
+	
+	static void updateAll(float dt);
 	
 	static void simulateAll(float dt);
 	
@@ -234,5 +247,17 @@ struct Entity {
 		meshes[idx] = &mesh;
 		meshMaterials[idx] = &material;
 		meshMats[idx] = mat;
+	}
+	
+	void setUpdateFunc(UpdateFunc func) {
+		updateFuncs[idx] = func;
+	}
+	
+	void setCollideFunc(CollideFunc func) {
+		collideFuncs[idx] = func;
+	}
+	
+	void setTriggerFunc(TriggerFunc func) {
+		triggerFuncs[idx] = func;
 	}
 };

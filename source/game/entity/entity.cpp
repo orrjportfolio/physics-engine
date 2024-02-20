@@ -10,6 +10,14 @@
 #include "../geom.hpp"
 #include "octree.hpp"
 
+void Entity::updateAll(float dt) {
+	for (uint32_t i = 0; i < num; i++) {
+		if (updateFuncs[i]) {
+			updateFuncs[i](Entity::byIdx(i), dt);
+		}
+	}
+}
+
 void Entity::simulateAll(float dt) {
 	constexpr float fallAsleepSpeed = 0.125f;
 	
@@ -79,11 +87,9 @@ void Entity::simulateAll(float dt) {
 		std::vector<uint32_t> overlaps;
 		Octree::root.overlaps(aMin, aMax, overlaps);
 		
-		
-		
-		for (uint32_t b : overlaps) {
-			if (a == b) { continue; }
-		//for (uint32_t b = a + 1; b < num; b++) {
+		//for (uint32_t b : overlaps) {
+		//	if (a == b) { continue; }
+		for (uint32_t b = a + 1; b < num; b++) {
 			if (flags[a].isSleeping && flags[b].isSleeping) {
 				continue;
 			}
@@ -195,12 +201,16 @@ void Entity::simulateAll(float dt) {
 			
 			auto correct = overlap.norm * overlap.depth;
 			
-			if (aK == COLLIDER_KIND_TRIGGER) {
-				// TODO
-				continue;
-			}
-			else if (bK == COLLIDER_KIND_TRIGGER) {
-				// TODO
+			auto &aVel = vels[a];
+			auto &bVel = vels[b];
+			
+			if (aK == COLLIDER_KIND_TRIGGER || bK == COLLIDER_KIND_TRIGGER) {
+				if (triggerFuncs[a]) {
+					triggerFuncs[a](aE, bE);
+				}
+				if (triggerFuncs[b]) {
+					triggerFuncs[b](bE, aE);
+				}
 				continue;
 			}
 			else if (aK == COLLIDER_KIND_KINEMATIC) {
@@ -231,6 +241,13 @@ void Entity::simulateAll(float dt) {
 				
 				Octree::root.moveEntry(a, aMin, aMax, aNewMin, aNewMax);
 				Octree::root.moveEntry(b, bMin, bMax, bNewMin, bNewMax);
+			}
+			
+			if (collideFuncs[a]) {
+				collideFuncs[a](aE, aVel, bE, bVel, overlap.norm);
+			}
+			if (collideFuncs[b]) {
+				collideFuncs[b](bE, bVel, aE, aVel, -overlap.norm);
 			}
 			
 			size_t numContacts;
@@ -311,13 +328,11 @@ void Entity::simulateAll(float dt) {
 			auto n = overlap.norm;
 			auto e = glm::max(bouncinesses[a], bouncinesses[b]);
 			
-			auto &aVel = vels[a];
 			auto aInvMass = invMasses[a];
 			auto &aRotMom = rotMoms[a];
 			auto &aRotVel = rotVels[a];
 			auto aInvInertiaTensor = invInertiaTensors[a];
 			
-			auto &bVel = vels[b];
 			auto bInvMass = invMasses[b];
 			auto &bRotMom = rotMoms[b];
 			auto &bRotVel = rotVels[b];
@@ -497,6 +512,8 @@ Entity Entity::create(glm::vec3 pos, glm::mat3 const &rot) {
 	poses[idx] = pos;
 	rots[idx] = rot;
 	
+	updateFuncs[idx] = nullptr;
+	
 	return Entity{
 		.idx = idx,
 		.gen = gen
@@ -504,6 +521,14 @@ Entity Entity::create(glm::vec3 pos, glm::mat3 const &rot) {
 }
 
 void Entity::destroy() {
+	auto k = flags[idx].colliderKind;
+	if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
+		glm::vec3 min, max;
+		colliderBounds(&min, &max);
+		
+		wakeUpAllInRegion(min - glm::vec3(0.2f), max + glm::vec3(0.2f));
+	}
+	
 	flags[idx].asInt = 0;
 	gens[idx]++;
 	
@@ -566,6 +591,9 @@ void Entity::makeKinematic(ColliderShape shape, PhysicsMaterial material) {
 	invInertiaTensors[idx] = glm::mat3(0.0f);
 	torques[idx] = glm::vec3(0.0f);
 	
+	collideFuncs[idx] = nullptr;
+	triggerFuncs[idx] = nullptr;
+	
 	glm::vec3 min, max;
 	colliderBounds(&min, &max);
 	Octree::root.addEntry(idx, min, max);
@@ -613,6 +641,9 @@ void Entity::makeDynamic(ColliderShape shape, PhysicsMaterial material, float de
 		0, 0, invLocalInertiaTensor.z
 	) * glm::transpose(rots[idx]);
 	torques[idx] = glm::vec3(0.0f);
+	
+	collideFuncs[idx] = nullptr;
+	triggerFuncs[idx] = nullptr;
 	
 	glm::vec3 min, max;
 	colliderBounds(&min, &max);
