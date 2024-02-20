@@ -116,6 +116,8 @@ struct Entity {
 	static inline glm::vec3
 		rotVels[CAP];
 	static inline glm::vec3
+		rotAccels[CAP];
+	static inline glm::vec3
 		invLocalInertiaTensors[CAP];
 	static inline glm::mat3
 		invInertiaTensors[CAP];

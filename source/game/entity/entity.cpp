@@ -52,13 +52,17 @@ void Entity::simulateAll(float dt) {
 			((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) &&
 			!flags[i].colliderIsAxisAligned
 		) {
-			if (rotVels[i] != glm::vec3(0.0f)) {
+			auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
+			
+			if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
+				auto dRot = (rotVels[i] * dt) + (rotAccel * 0.5f * dt * dt);
+				
 				auto rotVelMat = glm::mat3(
-					0, -rotVels[i].z, rotVels[i].y,
-					rotVels[i].z, 0, -rotVels[i].x,
-					-rotVels[i].y, rotVels[i].x, 0
+					0, dRot.z, -dRot.y,
+					-dRot.z, 0, dRot.x,
+					dRot.y, -dRot.x, 0
 				);
-				rots[i] = glm::orthonormalize(rots[i] + ((-rotVelMat * dt) * rots[i]));
+				rots[i] = glm::orthonormalize(rots[i] + (rotVelMat * rots[i]));
 			}
 			
 			if (k == COLLIDER_KIND_DYNAMIC) {
@@ -67,9 +71,12 @@ void Entity::simulateAll(float dt) {
 					(glm::mat3)glm::scale(invLocalInertiaTensors[i]) *
 					glm::transpose(rots[i]);
 				
-				rotMoms[i] += torques[i] * dt;
+				auto newRotAccel = torques[i];
+				rotMoms[i] += ((rotAccel + newRotAccel) / 2.0f) * dt;
 				
 				rotVels[i] = invInertiaTensors[i] * rotMoms[i];
+				
+				rotAccels[i] = newRotAccel;
 			}
 			
 			torques[i] = glm::vec3(0.0f);
