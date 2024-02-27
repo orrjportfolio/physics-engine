@@ -460,7 +460,7 @@ void Entity::simulateAll(float dt) {
 			bRotVel = bInvInertiaTensor * bRotMom;
 		}
 		
-		Scene3d::addDebugPoint(poses[a], flags[a].isSleeping? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(1.0f, 0.0f, 0.0f), true, 0.0f);
+		//Scene3d::addDebugPoint(poses[a], flags[a].isSleeping? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(1.0f, 0.0f, 0.0f), true, 0.0f);
 		
 		if ((aK == COLLIDER_KIND_KINEMATIC || aK == COLLIDER_KIND_DYNAMIC) && !flags[a].isSleeping) {
 			if (glm::length(poses[a] - prevPoses[a]) < fallAsleepSpeed * dt) {

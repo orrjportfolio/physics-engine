@@ -1,5 +1,7 @@
 #include "game.hpp"
 
+#include <iostream>
+
 #include <glm/gtx/transform.hpp>
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
@@ -31,33 +33,7 @@ namespace Game {
 		sphereMesh,
 		cubeMesh;
 	
-	void f(Octree *o) {
-		auto
-			min = o->minPos,
-			max = o->maxPos;
-		
-		auto colour = glm::vec3(
-			0.5f + ((rand() / (float)RAND_MAX) * 0.5f),
-			0.5f + ((rand() / (float)RAND_MAX) * 0.5f),
-			0.5f + ((rand() / (float)RAND_MAX) * 0.5f)
-		);
-		
-		Scene3d::addDebugCube((min + max) / 2.0f, ((max - min) / 2.0f) * 0.95f, glm::identity<glm::mat3>(), colour, false, 0.0f);
-		
-		for (auto e : o->entries) {
-			auto
-				eMin = e.minPos,
-				eMax = e.maxPos;
-			
-			Scene3d::addDebugCube((eMin + eMax) / 2.0f, ((eMax - eMin) / 2.0f) * 1.05f, glm::identity<glm::mat3>(), colour, false, 0.0f);
-		}
-		
-		if (o->children != nullptr) {
-			for (int i = 0; i < 8; i++) {
-				f(&o->children[i]);
-			}
-		}
-	};
+	static Entity car;
 	
 	void init() {
 		sphereMesh = Mesh3d::load("assets/models/sphere.obj");
@@ -72,31 +48,31 @@ namespace Game {
 		);
 		ground.addMesh(cubeMesh, grey, glm::scale(glm::vec3(100.0f, 1.0f, 100.0f)));
 		
-		for (int i = 0; i < 800; i++) {
-			int k = rand() % 2;
-			auto p = glm::vec3(
-				(rand() / (float)RAND_MAX) * 200.0f - 100.0f,
-				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
-				(rand() / (float)RAND_MAX) * 200.0f - 100.0f
-			);
+		car = Entity::create(glm::vec3(0.0f, 5.0f, 0.0f));
+		car.makeDynamic(
+			ColliderShape::box(glm::vec3(0.75f, 0.5f, 1.0f)),
+			PhysicsMaterial{.sFrict = 0.3f, .dFrict = 0.15f, .bounciness = 0.5f},
+			1.0f
+		);
+		car.addMesh(cubeMesh, purple, glm::scale(glm::vec3(0.75f, 0.5f, 1.0f)));
+		car.setUpdateFunc([](Entity e, float dt) {
+			auto keysHeld = SDL_GetKeyboardState(nullptr);
 			
-			/*auto p = glm::vec3(
-				(rand() / (float)RAND_MAX) * 12.0f - 6.0f,
-				(rand() / (float)RAND_MAX) * 20.0f + 3.0f,
-				(rand() / (float)RAND_MAX) * 12.0f - 6.0f
-			);*/
+			//e.addForce(glm::vec3(0.0f, 5.0f, 0.0f));
 			
-			auto e = Entity::create(p);
-			e.makeDynamic(
-				(k == 0)?
-					ColliderShape::sphere(1.0f) :
-					(k == 1)? ColliderShape::box(glm::vec3(1.0f)) :
-						ColliderShape::axisAlignedBox(glm::vec3(1.0f)),
-				PhysicsMaterial{.sFrict = 0.5f, .dFrict = 0.4f, .bounciness = 0.5f},
-				1.0f
-			);
-			e.addMesh((k > 0)? cubeMesh : sphereMesh, (k == 0)? purple : (k == 1)? white : green);
-		}
+			if (keysHeld[SDL_SCANCODE_W]) {
+				e.addForce(e.forward() * 40.0f);
+			}
+			if (keysHeld[SDL_SCANCODE_S]) {
+				e.addForce(e.forward() * -40.0f);
+			}
+			if (keysHeld[SDL_SCANCODE_A]) {
+				e.addForceAt(e.right() * 20.0f, e.pos() + e.forward() * 0.7f + e.right() * 0.5f);
+			}
+			if (keysHeld[SDL_SCANCODE_D]) {
+				e.addForceAt(e.right() * -20.0f, e.pos() + e.forward() * 0.7f + e.right() * -0.5f);
+			}
+		});
 	}
 	
 	void update(float dt) {
@@ -132,7 +108,17 @@ namespace Game {
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 		}
 		
-		/*srand(1);
-		f(&Octree::root);*/
+		glm::vec3 f = car.forward();
+		
+		glm::vec3 cpos = car.pos() - (car.forward() * 10.0f) + glm::vec3(0.0f, 5.0f, 0.0f);
+		float cyaw = std::atan2(-glm::abs(f.x), glm::sqrt(f.y * f.y + f.z * f.z));
+		std::cout << glm::degrees(cyaw) << '\n';
+		
+		Scene3d::cam.pos = cpos;
+		Scene3d::cam.yaw = cyaw;
+		Scene3d::cam.pitch = glm::radians(20.0f);
+		
+		//Scene3d::addDebugPoint(cpos, glm::vec3(1.0f, 0.0f, 0.0f), false, 0.0f);
+		//Scene3d::addDebugLine(cpos, cpos + glm::vec3(glm::cos(cyaw), 0.0f, glm::sin(cyaw)), glm::vec3(1.0f, 0.0f, 0.0f), false, 0.0f);
 	}
 }

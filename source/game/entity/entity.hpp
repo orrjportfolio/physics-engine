@@ -172,6 +172,12 @@ struct Entity {
 	
 	glm::mat3 rot() { return rots[idx]; }
 	
+	glm::vec3 right() { return rots[idx][0]; }
+	
+	glm::vec3 up() { return rots[idx][1]; }
+	
+	glm::vec3 forward() { return rots[idx][2]; }
+	
 	glm::vec3 rotVel() { return rotVels[idx]; }
 	
 	glm::mat4 bodyMat() {
@@ -233,6 +239,17 @@ struct Entity {
 		if (k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) {
 			flags[idx].isSleeping = false;
 		}
+	}
+	
+	void addForce(glm::vec3 force) {
+		flags[idx].isSleeping = false;
+		forces[idx] += force;
+	}
+	
+	void addForceAt(glm::vec3 force, glm::vec3 pos) {
+		flags[idx].isSleeping = false;
+		forces[idx] += force;
+		torques[idx] += glm::cross(pos - poses[idx], force);
 	}
 	
 	void makeTrigger(ColliderShape shape);

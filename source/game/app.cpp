@@ -27,19 +27,21 @@ namespace App {
 	}
 	
 	static void update(float dt) {
-		auto keysHeld = SDL_GetKeyboardState(nullptr);
-		static auto prevSpaceHeld = false;
-		if (keysHeld[SDL_SCANCODE_SPACE]/* && !prevSpaceHeld*/) {
-			auto start = std::chrono::steady_clock::now();
+		Entity::updateAll(dt);
+		
+		//auto keysHeld = SDL_GetKeyboardState(nullptr);
+		//static auto prevSpaceHeld = false;
+		//if (keysHeld[SDL_SCANCODE_SPACE]/* && !prevSpaceHeld*/) {
+			//auto start = std::chrono::steady_clock::now();
 			
 			for (int i = 0; i < 2; i++) {
 				Entity::simulateAll(TARGET_FRAME_DUR / 2.0f);
 			}
 			
-			auto end = std::chrono::steady_clock::now();
-			std::cout << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0) << " ms\n";
-		}
-		prevSpaceHeld = keysHeld[SDL_SCANCODE_SPACE];
+			//auto end = std::chrono::steady_clock::now();
+			//std::cout << (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0) << " ms\n";
+		//}
+		//prevSpaceHeld = keysHeld[SDL_SCANCODE_SPACE];
 		
 		Game::update(dt);
 		
