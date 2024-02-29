@@ -137,7 +137,7 @@ namespace Scene3d {
 	
 	void draw(int clientW, int clientH, float dt) {
 		auto
-			viewMat = cam.viewMat(),
+			viewMat = cam.viewMat,
 			projMat = cam.projMat(clientW / (float)clientH);
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -218,7 +218,7 @@ namespace Scene3d {
 							glm::scale(glm::vec3(o->radius))
 					});
 				
-				auto diffToCam = o->pos - cam.pos;
+				auto diffToCam = o->pos + glm::vec3(cam.viewMat[3]);
 				auto distToCam = glm::length(diffToCam);
 				
 				if (distToCam > o->radius) {

@@ -21,12 +21,12 @@ void main() {
 		vec4(v_pos, 1.0);
 	
 	mat3 normMat = mat3(transpose(inverse(u_modelMat)));
-	vec3 norm = normMat * v_norm;
+	vec3 norm = normalize(normMat * v_norm);
 	
 	vec3 lightColour = vec3(1.0, 1.0, 1.0);
 	vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
 	
-	vec3 ambient = vec3(0.2);
+	vec3 ambient = vec3(0.5);
 	float diffuse = max(dot(norm, lightDir), 0.0);
 	vec3 light = mix(ambient, lightColour, diffuse);
 	

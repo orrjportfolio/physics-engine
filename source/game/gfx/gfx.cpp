@@ -71,7 +71,7 @@ Program Program::create(std::span<Shader const*> shaders) {
 	return Program{.handle = handle};
 }
 
-Tex Tex::create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags) {
+Tex Tex::create(void const *dataRgba32, int w, int h, bool alpha, int flags) {
 	GLuint handle;
 	glGenTextures(1, &handle);
 	
@@ -114,7 +114,7 @@ Tex Tex::create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags
 	};
 }
 
-Tex Tex::load(char const *path, FlagMask flags) {
+Tex Tex::load(char const *path, int flags) {
 	int w, h, c;
 	auto data = stbi_load(path, &w, &h, &c, 4);
 	auto alpha = (c % 2) == 0;

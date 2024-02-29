@@ -19,15 +19,7 @@ struct Material {
 
 namespace Scene3d {
 	struct Cam {
-		glm::vec3 pos;
-		float pitch, yaw;
-		
-		glm::mat4 viewMat() {
-			return
-				glm::rotate(pitch, glm::vec3(1.0f, 0.0f, 0.0f)) *
-				glm::rotate(yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
-				glm::translate(-pos);
-		}
+		glm::mat4 viewMat;
 		
 		glm::mat4 projMat(float aspect) {
 			return

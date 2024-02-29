@@ -36,9 +36,9 @@ struct Tex {
 	GLuint handle;
 	int w, h;
 	
-	static Tex create(void const *dataRgba32, int w, int h, bool alpha, FlagMask flags);
+	static Tex create(void const *dataRgba32, int w, int h, bool alpha, int flags);
 	
-	static Tex load(char const *path, FlagMask flags);
+	static Tex load(char const *path, int flags);
 };
 
 struct Mesh {
