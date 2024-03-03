@@ -14,7 +14,7 @@ namespace Map {
 		PhysicsMaterial physMaterial;
 	};
 	
-	extern Object objects[3];
+	extern Object objects[60];
 	
 	void init();
 	

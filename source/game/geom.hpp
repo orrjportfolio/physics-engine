@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 
 #include <glm/glm.hpp>
 
@@ -65,7 +66,7 @@ namespace Sphere {
 		auto pM = glm::clamp(aPosM, bMinPosM, bMaxPosM);
 		auto p = glm::vec3(bInvBodyMat * glm::vec4(pM, 1));
 		auto diff = aPos - p;
-		auto dist = glm::length(diff);
+		float dist = glm::length(diff);
 		
 		if (dist == 0.0f) {
 			return Overlap{
@@ -423,7 +424,7 @@ namespace Obb {
 	}
 	
 	static size_t obbContacts(
-		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aModelMat, glm::vec3 const *aVerts,
+		glm::vec3 aMinPosM, glm::vec3 aMaxPosM, glm::mat4 const &aBodyMat, glm::vec3 const *aVerts,
 		glm::vec3 bMinPosM, glm::vec3 bMaxPosM, glm::mat4 const &bBodyMat, glm::vec3 const *bVerts,
 		glm::vec3 *oContacts
 	) {
@@ -434,10 +435,10 @@ namespace Obb {
 		
 		auto getFaceContacts = [&](
 			glm::vec3 const *aVerts,
-			glm::vec3 bMinPos, glm::vec3 bMaxPos, glm::mat3 const &bBodyMat
+			glm::vec3 bMinPos, glm::vec3 bMaxPos, glm::mat4 const &bBodyMat
 		) {
 			for (int i = 0; i < 8 && numContacts < 16; i++) {
-				auto vM = bBodyMat * aVerts[i];
+				auto vM = glm::vec3(bBodyMat * glm::vec4(aVerts[i], 1));
 				auto pM = glm::clamp(vM, bMinPos, bMaxPos);
 				auto diffM = glm::abs(vM - pM);
 				
@@ -448,7 +449,7 @@ namespace Obb {
 		};
 		
 		getFaceContacts(aVerts, bMinPosM, bMaxPosM, bBodyMat);
-		getFaceContacts(bVerts, aMinPosM, aMaxPosM, aModelMat);
+		getFaceContacts(bVerts, aMinPosM, aMaxPosM, aBodyMat);
 		
 		int edges[][2] = {
 			{0, 1}, {1, 2}, {2, 3}, {3, 0},
@@ -508,6 +509,7 @@ namespace Obb {
 			oContacts[i] = contacts[i];
 		}
 		
+		std::cout << i << '\n';
 		return i;
 	}
 	

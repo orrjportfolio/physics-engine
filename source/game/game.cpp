@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <glm/gtx/orthonormalize.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
@@ -59,9 +60,11 @@ namespace Game {
 		for (auto o : Map::objects) {
 			auto e = Entity::create(
 				o.pos,
-				glm::rotate(o.rot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *
-				glm::rotate(o.rot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
-				glm::rotate(o.rot.z, glm::vec3(0.0f, 0.0f, 1.0f))
+				glm::orthonormalize(glm::mat3(
+					glm::rotate(o.rot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *
+					glm::rotate(o.rot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+					glm::rotate(o.rot.z, glm::vec3(0.0f, 0.0f, 1.0f))
+				))
 			);
 			e.makeKinematic(
 				ColliderShape::box(o.halfSize),
