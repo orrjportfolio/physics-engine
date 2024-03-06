@@ -12,7 +12,7 @@
 
 void Entity::updateAll(float dt) {
 	for (uint32_t i = 0; i < num; i++) {
-		if (updateFuncs[i]) {
+		if (Entity::byIdx(i).exists() && updateFuncs[i]) {
 			updateFuncs[i](Entity::byIdx(i), dt);
 		}
 	}
@@ -95,9 +95,9 @@ void Entity::simulateAll(float dt) {
 		std::vector<uint32_t> overlaps;
 		Octree::root.overlaps(aMin, aMax, overlaps);
 		
-		//for (uint32_t b : overlaps) {
-		//	if (a == b) { continue; }
-		for (uint32_t b = a + 1; b < num; b++) {
+		for (uint32_t b : overlaps) {
+			if (a == b) { continue; }
+		//for (uint32_t b = a + 1; b < num; b++) {
 			if (flags[a].isSleeping && flags[b].isSleeping) {
 				continue;
 			}
@@ -526,6 +526,13 @@ Entity Entity::create(glm::vec3 pos, glm::mat3 const &rot) {
 		.idx = idx,
 		.gen = gen
 	};
+}
+
+void Entity::destroyAll() {
+	for (uint32_t i = 0; i < num; i++) {
+		auto e = Entity::byIdx(i);
+		if (e.exists()) { e.destroy(); }
+	}
 }
 
 void Entity::destroy() {

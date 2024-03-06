@@ -1,9 +1,10 @@
 #pragma once
 
 #include <algorithm>
-#include <iostream>
 
 #include <glm/glm.hpp>
+
+#include "gfx/scene3d.hpp"
 
 struct Overlap {
 	bool exists;
@@ -336,6 +337,10 @@ namespace Obb {
 		glm::vec3 norm;
 		
 		for (auto axis : axes) {
+			if (glm::isnan(axis.x)) {
+				continue;
+			}
+			
 			auto projSpan = [](glm::vec3 axis, glm::vec3 const *verts, float *oMin, float *oMax) {
 				auto min = glm::dot(verts[0], axis);
 				auto max = min;
@@ -509,7 +514,6 @@ namespace Obb {
 			oContacts[i] = contacts[i];
 		}
 		
-		std::cout << i << '\n';
 		return i;
 	}
 	

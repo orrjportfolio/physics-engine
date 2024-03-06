@@ -31,7 +31,7 @@ namespace App {
 		
 		//auto keysHeld = SDL_GetKeyboardState(nullptr);
 		//static auto prevSpaceHeld = false;
-		//if (keysHeld[SDL_SCANCODE_SPACE]/* && !prevSpaceHeld*/) {
+		//if (keysHeld[SDL_SCANCODE_LSHIFT]/* && !prevSpaceHeld*/) {
 			//auto start = std::chrono::steady_clock::now();
 			
 			for (int i = 0; i < 2; i++) {

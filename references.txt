@@ -1,0 +1,11 @@
+Cinematic Eagle Cry Sound Effect (used for badlands.ogg)
+by SoundEffectsFactory
+https://www.youtube.com/watch?v=WSGFatM1ktU
+
+Dirt 002 (used for sand.png, road.png)
+by Lamoot
+https://opengameart.org/content/dirt-002
+
+West Textures (used for rock.png)
+by qubodup
+https://opengameart.org/node/8025

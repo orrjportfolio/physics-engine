@@ -205,7 +205,7 @@ Mesh3d Mesh3d::load(char const *path) {
 				
 				glm::vec2 uv;
 				uv.x = strtod(it, &it);
-				uv.y = strtod(it, &it);
+				uv.y = 1.0f - strtod(it, &it);
 				
 				uvs.push_back(uv);
 			}

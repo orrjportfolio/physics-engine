@@ -158,6 +158,8 @@ struct Entity {
 		return Entity{idx, gens[idx]};
 	}
 	
+	static void destroyAll();
+	
 	void destroy();
 	
 	bool exists() {

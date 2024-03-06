@@ -10,7 +10,9 @@ uniform sampler2D u_tex;
 uniform vec3 u_colour;
 
 void main() {
-	vec3 albedo = texture2D(u_tex, f_uv).rgb;
+	vec4 albedo = texture2D(u_tex, f_uv);
 	
-	o_colour = f_light * albedo * u_colour;
+	if (albedo.a < 0.5) { discard; }
+	
+	o_colour = f_light * albedo.rgb * u_colour;
 }

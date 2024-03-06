@@ -1,6 +1,6 @@
 #include "octree.hpp"
 
-Octree Octree::root = Octree::create(nullptr, 0, glm::vec3(-100.0f), glm::vec3(100.0f));
+Octree Octree::root = Octree::create(nullptr, 0, glm::vec3(-200.0f), glm::vec3(500.0f));
 
 void Octree::overlaps(glm::vec3 testMinPos, glm::vec3 testMaxPos, std::vector<uint32_t> &oOverlaps) {
 	if (
