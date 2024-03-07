@@ -438,6 +438,25 @@ namespace Map {
 			.rot = glm::vec3(0.0, 0.0, -0.0),
 			.colliderKind = COLLIDER_KIND_NONE,
 			.material = &waterMaterial
+		},
+		
+		Object{
+			.pos = glm::vec3(59.5374f, 13.0859f, -11.5825),
+			.halfSize = glm::vec3(0.831568f, 25.4141f, 48.2928f) / 2.0f,
+			.rot = glm::vec3(glm::radians(-0.40996f), glm::radians(-6.63535f), 0.0f),
+			.colliderKind = COLLIDER_KIND_KINEMATIC,
+			.hidden = true,
+			//.material = &roadMaterial,
+			.physMaterial = roadPhysMaterial
+		},
+		Object{
+			.pos = glm::vec3(76.2762f, 13.0859f, -9.58261),
+			.halfSize = glm::vec3(0.831568f, 25.4141f, 48.2928f) / 2.0f,
+			.rot = glm::vec3(glm::radians(-0.40996f), glm::radians(-6.63535f), 0.0f),
+			.colliderKind = COLLIDER_KIND_KINEMATIC,
+			.hidden = true,
+			//.material = &roadMaterial,
+			.physMaterial = roadPhysMaterial
 		}
 	};
 	

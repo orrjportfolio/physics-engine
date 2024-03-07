@@ -1,6 +1,7 @@
 #include "game.hpp"
 
 #include <iostream>
+#include <vector>
 
 #include <glm/gtx/orthonormalize.hpp>
 #include <glm/gtx/transform.hpp>
@@ -18,7 +19,9 @@ namespace Game {
 	static Tex
 		melonTex,
 		tikiTex,
-		scorpionPickupTex;
+		scorpionPickupTex,
+		scorpionTex,
+		bannerTex;
 	
 	static auto white = Material{
 		.kind = Material::KIND_LIT_UNTEXED,
@@ -27,6 +30,14 @@ namespace Game {
 	static auto grey = Material{
 		.kind = Material::KIND_LIT_UNTEXED,
 		.colour = glm::vec3(0.5f)
+	};
+	static auto red = Material{
+		.kind = Material::KIND_LIT_UNTEXED,
+		.colour = glm::vec3(1.0f, 0.7f, 0.7f)
+	};
+	static auto blue = Material{
+		.kind = Material::KIND_LIT_UNTEXED,
+		.colour = glm::vec3(0.7f, 0.8f, 1.0f)
 	};
 	static auto purple = Material{
 		.kind = Material::KIND_LIT_UNTEXED,
@@ -51,21 +62,49 @@ namespace Game {
 		.tex = &scorpionPickupTex,
 		.colour = glm::vec3(1.0f)
 	};
+	static auto scorpionMaterial = Material{
+		.kind = Material::KIND_LIT,
+		.tex = &scorpionTex,
+		.colour = glm::vec3(1.0f)
+	};
+	static auto bannerMaterial = Material{
+		.kind = Material::KIND_LIT,
+		.tex = &bannerTex,
+		.colour = glm::vec3(1.0f)
+	};
 	
 	static Mesh3d
 		sphereMesh,
 		cubeMesh,
 		melonMesh,
 		tikiMesh,
-		scorpionPickupMesh;
+		scorpionPickupMesh,
+		bannerMesh;
+	
+	static int carType;
 	
 	static Entity car;
 	
 	static int ammo = 0;
 	
-	constexpr glm::vec3 carStartPos = glm::vec3(204.971f, 5.0f, -27.3629f);
+	static double timer = 0.0;
+	
+	static std::vector<double> lapTimes;
+	static std::vector<int> lapCarTypes;
+	
+	static int checkpoint = 0;
+	
+	constexpr glm::vec3 carStartPos = glm::vec3(204.971f, 5.0f, 39.4092f);
+	
+	static glm::vec3 cpos;
 	
 	void resetObjects() {
+		ammo = 0;
+		
+		timer = 0.0;
+		
+		checkpoint = 0;
+		
 		struct DynObject {
 			glm::vec3 pos;
 			float rot;
@@ -131,7 +170,16 @@ namespace Game {
 		};
 		
 		glm::vec3 scorpionPickups[] = {
-			glm::vec3(204.17f, 3.3143f, 20.632f)
+			glm::vec3(201.52859497070312, 2.3498709201812744, 13.038581848144531),
+			glm::vec3(208.36416625976562, 2.3498709201812744, 13.116134643554688),
+			glm::vec3(74.68993377685547, 2.3498709201812744, -66.42782592773438),
+			glm::vec3(66.77835083007812, 2.3498709201812744, -66.26666259765625),
+			glm::vec3(92.79541015625, -5.385968208312988, 7.681734561920166),
+			glm::vec3(87.00019073486328, -6.193933963775635, -5.564462184906006),
+			glm::vec3(104.34880065917969, -5.385968208312988, -15.893692016601562),
+			glm::vec3(117.0617904663086, -5.385968208312988, -11.665468215942383),
+			glm::vec3(99.16342163085938, -6.1848554611206055, -28.1428165435791),
+			glm::vec3(122.60000610351562, -5.385968208312988, -27.69451332092285)
 		};
 		
 		for (auto o : melons) {
@@ -192,65 +240,144 @@ namespace Game {
 					o.density
 				);
 			}
-			e.addMesh(cubeMesh, *o.material, glm::scale(o.halfSize));
+			if (!o.hidden) {
+				e.addMesh(cubeMesh, *o.material, glm::scale(o.halfSize));
+			}
 		}
 		
 		for (auto o : scorpionPickups) {
 			auto e = Entity::create(o);
 			e.addMesh(scorpionPickupMesh, scorpionPickupMaterial);
+			e.makeTrigger(ColliderShape::sphere(1.0f));
+			e.setUpdateFunc([](Entity e, float dt) {
+				e.setRot(glm::mat3(glm::rotate(dt * 7.0f, glm::vec3(0.0f, 1.0f, 0.0f))) * e.rot());
+			});
+			e.setTriggerFunc([](Entity e, Entity other) {
+				if (other.idx == car.idx && other.gen == car.gen) {
+					e.destroy();
+					ammo += 10;
+				}
+			});
 		}
 		
+		auto banner = Entity::create(glm::vec3(203.2f, 7.8011f, 26.004f));
+		banner.addMesh(bannerMesh, bannerMaterial);
+		
 		car = Entity::create(carStartPos, glm::rotate(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-		car.makeDynamic(
-			ColliderShape::box(glm::vec3(0.75f, 0.5f, 1.0f)),
-			PhysicsMaterial{.sFrict = 0.3f, .dFrict = 0.15f, .bounciness = 0.5f},
-			1.0f
-		);
-		car.addMesh(cubeMesh, purple, glm::scale(glm::vec3(0.75f, 0.5f, 1.0f)));
+		if (carType == 0) {
+			car.makeDynamic(
+				ColliderShape::box(glm::vec3(0.75f, 0.5f, 1.0f)),
+				PhysicsMaterial{.sFrict = 0.22f, .dFrict = 0.15f, .bounciness = 0.5f},
+				1.0f
+			);
+			car.addMesh(cubeMesh, purple, glm::scale(glm::vec3(0.75f, 0.5f, 1.0f)));
+		}
+		else if (carType == 1) {
+			car.makeDynamic(
+				ColliderShape::box(glm::vec3(1.0f, 0.8f, 1.4f)),
+				PhysicsMaterial{.sFrict = 0.4f, .dFrict = 0.3f, .bounciness = 0.2f},
+				1.0f
+			);
+			car.addMesh(cubeMesh, grey, glm::scale(glm::vec3(1.0f, 0.8f, 1.4f)));
+		}
+		else if (carType == 2) {
+			car.makeDynamic(
+				ColliderShape::box(glm::vec3(0.375f, 0.25f, 0.5f)),
+				PhysicsMaterial{.sFrict = 0.2f, .dFrict = 0.12f, .bounciness = 0.3f},
+				1.0f
+			);
+			car.addMesh(cubeMesh, blue, glm::scale(glm::vec3(0.375f, 0.25f, 0.5f)));
+		}
+		else if (carType == 3) {
+			car.makeDynamic(
+				ColliderShape::sphere(0.7f),
+				PhysicsMaterial{.sFrict = 0.3f, .dFrict = 0.15f, .bounciness = 0.7f},
+				1.0f
+			);
+			car.addMesh(sphereMesh, red, glm::scale(glm::vec3(0.7f)));
+		}
 		car.setUpdateFunc([](Entity e, float dt) {
+			float thrust =
+				(carType == 1)? 100.0f :
+				(carType == 2)? 20.0f :
+				40.0f;
+			float steer =
+				(carType == 1)? 30.0f :
+				(carType == 2)? 0.5f :
+				10.0f;
+			float jump =
+				(carType == 1)? 6000.0f :
+				(carType == 2)? 500.0f :
+				2500.0f;
+			
 			auto keysHeld = SDL_GetKeyboardState(nullptr);
 			
 			static bool prevSpaceHeld;
 			auto spaceHeld = keysHeld[SDL_SCANCODE_SPACE];
-			if (spaceHeld && !prevSpaceHeld) {
+			if (spaceHeld && !prevSpaceHeld && glm::abs(e.vel().y) <= 0.5f) {
 				e.setPos(e.pos() + glm::vec3(0.0f, 0.05f, 0.0f));
-				e.addForce(glm::vec3(0.0f, 2500.0f, 0.0f));
+				e.addForce(glm::vec3(0.0f, jump, 0.0f));
 			}
 			prevSpaceHeld = spaceHeld;
 			
+			static bool prevEHeld;
+			auto eHeld = keysHeld[SDL_SCANCODE_E];
+			if (eHeld && !prevEHeld) {
+				if (ammo > 0) {
+					auto s = Entity::create(e.pos() + e.forward() * 2.5f);
+					s.makeDynamic(ColliderShape::sphere(1.0f), PhysicsMaterial{
+						.sFrict = 0.2f,
+						.dFrict = 0.15f,
+						.bounciness = 0.1f
+					}, 0.1f);
+					s.addForce(e.forward() * 4000.0f);
+					s.addMesh(scorpionPickupMesh, scorpionMaterial);
+					s.setUpdateFunc([](Entity e, float dt) {
+						if (Entity::lifetimes[e.idx] >= 3.0f) { e.destroy(); }
+					});
+					
+					ammo--;
+				}
+			}
+			prevEHeld = eHeld;
+			
 			if (keysHeld[SDL_SCANCODE_W]) {
-				e.addForce(e.forward() * 40.0f);
+				
+				e.addForce(e.forward() * thrust);
 			}
 			if (keysHeld[SDL_SCANCODE_S]) {
-				e.addForce(e.forward() * -40.0f);
+				e.addForce(e.forward() * -thrust);
 			}
-			if (keysHeld[SDL_SCANCODE_A]) {
+			if ((keysHeld[SDL_SCANCODE_A] && e.up().y > 0.0f) || (keysHeld[SDL_SCANCODE_D] && e.up().y < 0.0f)) {
 				e.addForceAt(
-					e.right() * 10.0f,
+					e.right() * steer,
 					e.pos() + (e.forward() * 0.7f) + (e.right() * -0.5f)
 				);
 				e.addForceAt(
-					e.right() * -10.0f,
+					e.right() * -steer,
 					e.pos() + (e.forward() * -0.7f) + (e.right() * 0.5f)
 				);
 			}
-			if (keysHeld[SDL_SCANCODE_D]) {
+			if ((keysHeld[SDL_SCANCODE_D] && e.up().y > 0.0f) || (keysHeld[SDL_SCANCODE_A] && e.up().y < 0.0f)) {
 				e.addForceAt(
-					e.right() * -10.0f,
+					e.right() * -steer,
 					e.pos() + (e.forward() * 0.7f) + (e.right() * 0.5f)
 				);
 				e.addForceAt(
-					e.right() * 10.0f,
+					e.right() * steer,
 					e.pos() + (e.forward() * -0.7f) + (e.right() * -0.5f)
 				);
 			}
 			
 			if (e.pos().y < -50.0f) {
-				e.setPos(carStartPos);
+				/*e.setPos(carStartPos);
 				e.setVel(glm::vec3(0.0f));
 				e.setRot(glm::rotate(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 				e.setRotVel(glm::vec3(0.0f));
 				Entity::rotMoms[e.idx] = glm::vec3(0.0f);
+				checkpoint = 0;*/
+				
+				resetObjects();
 			}
 		});
 		
@@ -278,18 +405,56 @@ namespace Game {
 			other.addForce(glm::vec3(0.0f, 80.0f, 0.0f));
 		});
 		//updraft.addMesh(cubeMesh, purple, glm::scale(glm::vec3(23.6f, 43.2f, 28.2f) / 2.0f));
+		
+		auto cp1 = Entity::create(glm::vec3(70.937f, 11.703f, -60.084f));
+		cp1.makeTrigger(ColliderShape::axisAlignedBox(glm::vec3(23.9f, 23.9f, 2.0f) / 2.0f));
+		cp1.setTriggerFunc([](Entity e, Entity other) {
+			if (other.idx == car.idx && other.gen == car.gen) {
+				checkpoint = 1;
+			}
+		});
+		
+		auto cp2 = Entity::create(glm::vec3(74.378f, -7.7027f, -14.718f));
+		cp2.makeTrigger(ColliderShape::axisAlignedBox(glm::vec3(6.31f, 13.1f, 43.2f) / 2.0f));
+		cp2.setTriggerFunc([](Entity e, Entity other) {
+			if (other.idx == car.idx && other.gen == car.gen && (checkpoint >= 1)) {
+				checkpoint = 2;
+			}
+		});
+		
+		auto cp3 = Entity::create(glm::vec3(174.03f, 11.703f, 79.638f));
+		cp3.makeTrigger(ColliderShape::axisAlignedBox(glm::vec3(3.37f, 23.9f, 33.4f) / 2.0f));
+		cp3.setTriggerFunc([](Entity e, Entity other) {
+			if (other.idx == car.idx && other.gen == car.gen && (checkpoint >= 2)) {
+				checkpoint = 3;
+			}
+		});
+		
+		auto cp4 = Entity::create(glm::vec3(214.34f, 11.703f, 23.699f));
+		cp4.makeTrigger(ColliderShape::axisAlignedBox(glm::vec3(79.8f, 23.9f, 2.0f) / 2.0f));
+		cp4.setTriggerFunc([](Entity e, Entity other) {
+			if (other.idx == car.idx && other.gen == car.gen && (checkpoint == 3)) {
+				lapTimes.push_back(timer);
+				lapCarTypes.push_back(carType);
+				resetObjects();
+			}
+		});
+		
 	}
 	
 	void init() {
 		melonTex = Tex::load("assets/textures/melon.png", Tex::FLAG_MIPMAP | Tex::FLAG_FILTER);
 		tikiTex = Tex::load("assets/textures/tiki.png", Tex::FLAG_MIPMAP | Tex::FLAG_FILTER);
 		scorpionPickupTex = Tex::load("assets/textures/scorpionPickup.png", Tex::FLAG_MIPMAP | Tex::FLAG_FILTER);
+		scorpionTex = Tex::load("assets/textures/scorpion.png", Tex::FLAG_MIPMAP | Tex::FLAG_FILTER);
+		bannerTex = Tex::load("assets/textures/banner.png", Tex::FLAG_MIPMAP | Tex::FLAG_FILTER);
 		
 		sphereMesh = Mesh3d::load("assets/models/sphere.obj");
 		cubeMesh = Mesh3d::load("assets/models/cube.obj");
 		melonMesh = Mesh3d::load("assets/models/melon.obj");
 		tikiMesh = Mesh3d::load("assets/models/tiki.obj");
 		scorpionPickupMesh = Mesh3d::load("assets/models/scorpionPickup.obj");
+		bannerMesh = Mesh3d::load("assets/models/banner.obj");
 		
 		Map::init();
 		
@@ -297,9 +462,11 @@ namespace Game {
 	}
 	
 	void update(float dt) {
+		timer += (double)dt;
+		
 		glm::vec3 f = car.forward();
 		
-		glm::vec3 cpos = car.pos() - (car.forward() * 10.0f) + glm::vec3(0.0f, 5.0f, 0.0f);
+		cpos = car.pos() - (car.forward() * 10.0f) + glm::vec3(0.0f, 5.0f, 0.0f);
 		Scene3d::cam.viewMat =
 			glm::lookAt(cpos, car.pos(), glm::vec3(0.0f, 1.0f, 0.0f));
 		
@@ -312,10 +479,56 @@ namespace Game {
 		}
 		prevRHeld = rHeld;
 		
-		ImGui::Begin("Status"); {
+		if (ImGui::Begin("Menu")) {
+			int msecs = (int)(timer * 1000.0) % 1000;
+			int secs = (int)timer % 60;
+			int mins = (int)timer / 60;
+			
+			ImGui::Text("Time: %d:%.2d.%.3d", mins, secs, msecs);
+			
 			ImGui::Text("Ammunition: %d", ammo);
 			
-			ImGui::End();
+			ImGui::Text("Switch Car Type:");
+			if (ImGui::Button("Classic Original")) { carType = 0; resetObjects(); }
+			ImGui::SameLine();
+			if (ImGui::Button("Elephant")) { carType = 1; resetObjects(); }
+			if (ImGui::Button("Bar of Soap")) { carType = 2; resetObjects(); }
+			ImGui::SameLine();
+			if (ImGui::Button("Ball")) { carType = 3; resetObjects(); }
+			
+			ImGui::Checkbox("Use Euler Integration", &useEuler);
 		}
+		ImGui::End();
+		
+		if (ImGui::Begin("Lap History")) {
+			for (size_t i = 0; i < lapTimes.size(); i++) {
+				double t = lapTimes[i];
+				int ct = lapCarTypes[i];
+				
+				int msecs = (int)(t * 1000.0) % 1000;
+				int secs = (int)t % 60;
+				int mins = (int)t / 60;
+				
+				ImGui::Text("%d:%.2d.%.3d as %s", mins, secs, msecs,
+					(ct == 0)? "Classic Original" :
+					(ct == 1)? "Elephant" :
+					(ct == 2)? "Bar of Soap" :
+					"Ball"
+				);
+			}
+			
+		}
+		ImGui::End();
+		
+		if (ImGui::Begin("Controls")) {
+			ImGui::Text("W: drive");
+			ImGui::Text("S: reverse");
+			ImGui::Text("A, D: steer");
+			ImGui::Text("SPACE: jump");
+			ImGui::Text("E: shoot");
+			ImGui::Text("R: reset lap");
+			
+		}
+		ImGui::End();
 	}
 }

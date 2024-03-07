@@ -1,6 +1,5 @@
-Cinematic Eagle Cry Sound Effect (used for badlands.ogg)
-by SoundEffectsFactory
-https://www.youtube.com/watch?v=WSGFatM1ktU
+
+Assets:
 
 Dirt 002 (used for sand.png, road.png)
 by Lamoot
@@ -9,3 +8,26 @@ https://opengameart.org/content/dirt-002
 West Textures (used for rock.png)
 by qubodup
 https://opengameart.org/node/8025
+
+Emperor Scorpion Dimensions (traced for scorpion.png and scorpionPickup.png)
+https://www.dimensions.com/element/emperor-scorpion-pandinus-imperator
+
+Code:
+
+C++ Standard Library
+ISO/IEC 14882:2020(E)
+
+Dear ImGui (user interface)
+https://github.com/ocornut/imgui
+
+gl3w (OpenGL loader)
+https://github.com/skaslev/gl3w
+
+OpenGL (rendering)
+https://www.opengl.org/
+
+SDL (window and input)
+https://www.libsdl.org/
+
+stb_image (image loading)
+https://github.com/nothings/stb/blob/master/stb_image.h

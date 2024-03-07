@@ -10,9 +10,13 @@
 #include "../geom.hpp"
 #include "octree.hpp"
 
+bool useEuler = false;
+
 void Entity::updateAll(float dt) {
 	for (uint32_t i = 0; i < num; i++) {
 		if (Entity::byIdx(i).exists() && updateFuncs[i]) {
+			lifetimes[i] += dt;
+			
 			updateFuncs[i](Entity::byIdx(i), dt);
 		}
 	}
@@ -27,14 +31,24 @@ void Entity::simulateAll(float dt) {
 			glm::vec3 prevMin, prevMax;
 			byIdx(i).colliderBounds(&prevMin, &prevMax);
 			
-			poses[i] += vels[i] * dt;
-			if (k == COLLIDER_KIND_DYNAMIC) {
-				poses[i] += (accels[i] / 2.0f) * (dt * dt);
-				
-				auto newAccel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
-				vels[i] += ((accels[i] + newAccel) / 2.0f) * dt;
-				
-				accels[i] = newAccel;
+			if (useEuler) {
+				poses[i] += vels[i] * dt;
+				if (k == COLLIDER_KIND_DYNAMIC) {
+					auto newAccel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
+					vels[i] += ((accels[i] + newAccel) / 2.0f) * dt;
+					accels[i] = newAccel;
+				}
+			}
+			else {
+				poses[i] += vels[i] * dt;
+				if (k == COLLIDER_KIND_DYNAMIC) {
+					poses[i] += (accels[i] / 2.0f) * (dt * dt);
+					
+					auto newAccel = (forces[i] * invMasses[i]) + glm::vec3(0.0f, -9.8f, 0.0f);
+					vels[i] += ((accels[i] + newAccel) / 2.0f) * dt;
+					
+					accels[i] = newAccel;
+				}
 			}
 			
 			glm::vec3 min, max;
@@ -52,32 +66,60 @@ void Entity::simulateAll(float dt) {
 			((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) &&
 			!flags[i].colliderIsAxisAligned
 		) {
-			auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
-			
-			if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
-				auto dRot = (rotVels[i] * dt) + (rotAccel * 0.5f * dt * dt);
+			/*if (useEuler) {
+				auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
+				if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
+					auto dRot = rotVels[i] * dt;
+					
+					auto rotVelMat = glm::mat3(
+						0, dRot.z, -dRot.y,
+						-dRot.z, 0, dRot.x,
+						dRot.y, -dRot.x, 0
+					);
+					rots[i] = glm::orthonormalize(rots[i] + (rotVelMat * rots[i]));
+				}
 				
-				auto rotVelMat = glm::mat3(
-					0, dRot.z, -dRot.y,
-					-dRot.z, 0, dRot.x,
-					dRot.y, -dRot.x, 0
-				);
-				rots[i] = glm::orthonormalize(rots[i] + (rotVelMat * rots[i]));
+				if (k == COLLIDER_KIND_DYNAMIC) {
+					invInertiaTensors[i] =
+						rots[i] *
+						(glm::mat3)glm::scale(invLocalInertiaTensors[i]) *
+						glm::transpose(rots[i]);
+					
+					auto newRotAccel = torques[i];
+					rotMoms[i] += newRotAccel * dt;
+					
+					rotVels[i] = invInertiaTensors[i] * rotMoms[i];
+					
+					rotAccels[i] = newRotAccel;
+				}
 			}
-			
-			if (k == COLLIDER_KIND_DYNAMIC) {
-				invInertiaTensors[i] =
-					rots[i] *
-					(glm::mat3)glm::scale(invLocalInertiaTensors[i]) *
-					glm::transpose(rots[i]);
+			else {*/
+				auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
+				if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
+					auto dRot = (rotVels[i] * dt) + (rotAccel * 0.5f * dt * dt);
+					
+					auto rotVelMat = glm::mat3(
+						0, dRot.z, -dRot.y,
+						-dRot.z, 0, dRot.x,
+						dRot.y, -dRot.x, 0
+					);
+					rots[i] = glm::orthonormalize(rots[i] + (rotVelMat * rots[i]));
+				}
 				
-				auto newRotAccel = torques[i];
-				rotMoms[i] += ((rotAccel + newRotAccel) / 2.0f) * dt;
-				
-				rotVels[i] = invInertiaTensors[i] * rotMoms[i];
-				
-				rotAccels[i] = newRotAccel;
-			}
+				if (k == COLLIDER_KIND_DYNAMIC) {
+					invInertiaTensors[i] =
+						rots[i] *
+						(glm::mat3)glm::scale(invLocalInertiaTensors[i]) *
+						glm::transpose(rots[i]);
+					
+					auto newRotAccel = torques[i];
+					rotMoms[i] += ((rotAccel + newRotAccel) / 2.0f) * dt;
+					
+					rotVels[i] = invInertiaTensors[i] * rotMoms[i];
+					
+					rotAccels[i] = newRotAccel;
+				}
+			//}
 			
 			torques[i] = glm::vec3(0.0f);
 		}
@@ -517,6 +559,8 @@ Entity Entity::create(glm::vec3 pos, glm::mat3 const &rot) {
 	
 	uint32_t gen = gens[idx];
 	
+	lifetimes[idx] = 0.0f;
+	
 	poses[idx] = pos;
 	rots[idx] = rot;
 	
@@ -529,6 +573,9 @@ Entity Entity::create(glm::vec3 pos, glm::mat3 const &rot) {
 }
 
 void Entity::destroyAll() {
+	Octree::root.destroy();
+	Octree::root = Octree::create(nullptr, 0, glm::vec3(-200.0f), glm::vec3(500.0f));
+	
 	for (uint32_t i = 0; i < num; i++) {
 		auto e = Entity::byIdx(i);
 		if (e.exists()) { e.destroy(); }

@@ -38,6 +38,12 @@ struct Octree {
 	}
 	
 	void destroy() {
+		if (children != nullptr) {
+			for (int i = 0; i < 8; i++) {
+				children[i].destroy();
+			}
+		}
+		
 		delete[] children;
 	}
 	

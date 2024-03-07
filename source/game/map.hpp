@@ -11,12 +11,13 @@ namespace Map {
 		glm::vec3 halfSize;
 		glm::vec3 rot;
 		ColliderKind colliderKind;
+		bool hidden;
 		Material *material;
 		PhysicsMaterial physMaterial;
 		float density;
 	};
 	
-	extern Object objects[60];
+	extern Object objects[62];
 	
 	void init();
 	

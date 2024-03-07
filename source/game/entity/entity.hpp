@@ -9,6 +9,8 @@
 #include "../gfx/gfx.hpp"
 #include "../gfx/scene3d.hpp"
 
+extern bool useEuler;
+
 enum ColliderKind {
 	COLLIDER_KIND_NONE,
 	COLLIDER_KIND_TRIGGER,
@@ -87,6 +89,9 @@ struct Entity {
 		numEmpties;
 	static inline uint32_t
 		empties[CAP];
+	
+	static inline float
+		lifetimes[CAP];
 	
 	static inline glm::vec3
 		colliderHalfSizes[CAP];

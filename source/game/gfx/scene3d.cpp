@@ -140,6 +140,7 @@ namespace Scene3d {
 			viewMat = cam.viewMat,
 			projMat = cam.projMat(clientW / (float)clientH);
 		
+		glClearColor(2.0f/3.0f, 1.0f/3.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glViewport(0, 0, clientW, clientH);
