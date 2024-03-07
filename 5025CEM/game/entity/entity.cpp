@@ -66,7 +66,7 @@ void Entity::simulateAll(float dt) {
 			((k == COLLIDER_KIND_KINEMATIC || k == COLLIDER_KIND_DYNAMIC) && !flags[i].isSleeping) &&
 			!flags[i].colliderIsAxisAligned
 		) {
-			/*if (useEuler) {
+			//if (useEuler) {
 				auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
 				if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
 					auto dRot = rotVels[i] * dt;
@@ -92,8 +92,8 @@ void Entity::simulateAll(float dt) {
 					
 					rotAccels[i] = newRotAccel;
 				}
-			}
-			else {*/
+			//}
+			/*else {
 				auto rotAccel = (k == COLLIDER_KIND_DYNAMIC)? rotAccels[i] : glm::vec3(0.0f);
 				if (rotVels[i] != glm::vec3(0.0f) || rotAccel != glm::vec3(0.0f)) {
 					auto dRot = (rotVels[i] * dt) + (rotAccel * 0.5f * dt * dt);
@@ -119,7 +119,7 @@ void Entity::simulateAll(float dt) {
 					
 					rotAccels[i] = newRotAccel;
 				}
-			//}
+			}*/
 			
 			torques[i] = glm::vec3(0.0f);
 		}
