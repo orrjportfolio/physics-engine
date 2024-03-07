@@ -23,6 +23,9 @@ https://github.com/ocornut/imgui
 gl3w (OpenGL loader)
 https://github.com/skaslev/gl3w
 
+glm (vectors and matrices)
+https://github.com/g-truc/glm
+
 OpenGL (rendering)
 https://www.opengl.org/
 
