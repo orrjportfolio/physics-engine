@@ -1,5 +1,5 @@
-Take a leisurely drive along scenic Watermelon Beach :)
+Take a leisurely drive along Watermelon Beach :)
 
-Can you get under 1 minute?
+Can you do it in under 1 minute?
 
 My student ID: 12192179
