@@ -1,5 +1,5 @@
-Take a leisurely drive along Watermelon Beach :)
+# 3D Physics Engine + Racing Game
 
-Can you do it in under 1 minute?
+This project is a small time-trial racing game built on top of a custom 3D rigid body physics engine written from scratch. It was built in C++ using SDL2, OpenGL, GLM, and ImGui.
 
-My student ID: 12192179
+For more information, look at https://orrjportfolio.github.io/portfolio/phys.html
